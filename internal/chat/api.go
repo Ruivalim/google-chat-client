@@ -126,9 +126,10 @@ func (s *Service) spaceLabel(ctx context.Context, accountID, space string) (stri
 		if m.Member.Name == "users/"+accountID {
 			continue
 		}
+		// Sem nome nem email, o ID numérico não ajuda ninguém; a interface mostra o nome genérico.
 		name := m.Member.DisplayName
 		if name == "" {
-			name = strings.TrimPrefix(m.Member.Name, "users/")
+			name = m.Member.Email
 		}
 		if name != "" {
 			names = append(names, name)

@@ -31,7 +31,9 @@ type SpacePage struct {
 type User struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
 	Type        string `json:"type"`
+	IsAnonymous bool   `json:"isAnonymous"`
 }
 
 type Thread struct {

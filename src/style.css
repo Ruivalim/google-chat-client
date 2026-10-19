@@ -344,6 +344,7 @@ a {
 .list-notice {
   padding: 8px 12px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .more-conversations {
@@ -493,6 +494,7 @@ a {
 }
 .message-notice {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding: 12px 16px;
 }

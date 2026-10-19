@@ -48,8 +48,36 @@ const drafts = new Map<string, { text: string; requestId: string }>();
 const selectedSpaces = new Map<string, Space>();
 type Appearance = "system" | "light" | "dark";
 
+// As mensagens vêm do Go em minúscula, como manda a convenção de lá.
 function describe(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  const text = error instanceof Error ? error.message : String(error);
+  return text.charAt(0).toLocaleUpperCase("pt-BR") + text.slice(1);
+}
+
+// Duas contas da mesma pessoa só se distinguem pela organização, então a faixa
+// mostra as iniciais e a cor do domínio. Conta pessoal, sem domínio, usa o nome.
+function AccountAvatar({ account, size }: { account: Account; size?: 36 }) {
+  const org = account.domain.split(".")[0] ?? "";
+  const parts = org.split(/[-_]/).filter(Boolean);
+  const initials = parts.length > 1 ? parts[0][0] + parts[1][0] : org.slice(0, 2);
+  return (
+    <Avatar
+      aria-hidden
+      name={account.name || account.email}
+      initials={initials ? initials.toLocaleUpperCase("pt-BR") : undefined}
+      color="colorful"
+      idForColor={account.domain || account.email}
+      size={size}
+    />
+  );
+}
+
+function senderName(m: Message, account: Account) {
+  if (m.sender.name === `users/${account.id}`) return account.name || account.email;
+  if (m.sender.displayName) return m.sender.displayName;
+  if (m.sender.email) return m.sender.email;
+  if (m.sender.type === "BOT") return "Aplicativo";
+  return m.sender.isAnonymous ? "Perfil indisponível" : "Pessoa sem nome visível";
 }
 
 function openLink(url: string) {
@@ -79,7 +107,7 @@ function IconButton({
 
 function Notice({ children }: { children: ReactNode }) {
   return (
-    <MessageBar intent="error">
+    <MessageBar intent="error" layout="multiline">
       <MessageBarBody>{children}</MessageBarBody>
     </MessageBar>
   );
@@ -208,7 +236,7 @@ export function App() {
                 aria-label={`Usar ${a.email}`}
                 onClick={() => void select(a.id)}
               >
-                <Avatar name={a.name || a.email} color="neutral" size={36} />
+                <AccountAvatar account={a} size={36} />
               </button>
             </Tooltip>
           ))}
@@ -333,7 +361,7 @@ export function App() {
                 <p>As contas mantêm sessões separadas. Remover uma conta encerra a sessão neste aplicativo.</p>
                 {state.accounts.map((a) => (
                   <div className="settings-account" key={a.id}>
-                    <Avatar name={a.name || a.email} color="neutral" />
+                    <AccountAvatar account={a} />
                     <div>
                       <strong>{a.name || a.email}</strong>
                       <span>{a.email}</span>
@@ -539,7 +567,7 @@ function Workspace({ account, onSettings }: { account: Account; onSettings: () =
                   {s.spaceType === "SPACE" ? (
                     <People24Regular />
                   ) : (
-                    <Avatar name={spaceName(s)} color="neutral" size={36} />
+                    <Avatar aria-hidden name={spaceName(s)} color="neutral" size={36} />
                   )}
                 </span>
                 <span className="conversation-label">
@@ -820,10 +848,7 @@ function MessageRow({
   onThread?: () => void;
 }) {
   const own = m.sender.name === `users/${account.id}`;
-  const name = own
-    ? account.name || account.email
-    : m.sender.displayName ||
-      (m.sender.type === "BOT" ? "Aplicativo" : `Usuário ${m.sender.name.split("/").at(-1) || "Google"}`);
+  const name = senderName(m, account);
   const date = new Date(m.createTime);
   return (
     <>
@@ -841,7 +866,7 @@ function MessageRow({
         </div>
       )}
       <article className={`message ${own ? "own" : ""}`}>
-        <Avatar name={name} color="neutral" size={32} />
+        <Avatar aria-hidden name={name} color="neutral" size={32} />
         <div className="message-content">
           <header>
             <strong>{name}</strong>

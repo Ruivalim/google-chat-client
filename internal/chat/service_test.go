@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -153,5 +154,69 @@ func TestSendMessageRejectsInvalidConversationBeforeRequest(t *testing.T) {
 	}
 	if called {
 		t.Fatal("invalid conversation reached the transport")
+	}
+}
+
+func TestSpacesNamesDirectMessagesFromOtherMembers(t *testing.T) {
+	var memberCalls atomic.Int32
+	s := testService(&memoryVault{values: map[string][]byte{}}, roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/v1/spaces":
+			return jsonResponse(http.StatusOK, `{"spaces":[
+				{"name":"spaces/dm","spaceType":"DIRECT_MESSAGE","lastActiveTime":"2026-10-19T10:00:00Z"},
+				{"name":"spaces/group","spaceType":"GROUP_CHAT","lastActiveTime":"2026-10-19T11:00:00Z"},
+				{"name":"spaces/hidden","spaceType":"DIRECT_MESSAGE","lastActiveTime":"2026-10-19T09:00:00Z"},
+				{"name":"spaces/team","displayName":"Plataforma","spaceType":"SPACE","lastActiveTime":"2026-10-19T12:00:00Z"}
+			]}`), nil
+		case "/v1/spaces/dm/members":
+			memberCalls.Add(1)
+			return jsonResponse(http.StatusOK, `{"memberships":[
+				{"member":{"name":"users/acct-a","displayName":"Eu Mesma"}},
+				{"member":{"name":"users/42","displayName":"Bruno Lima"}}
+			]}`), nil
+		case "/v1/spaces/group/members":
+			memberCalls.Add(1)
+			return jsonResponse(http.StatusOK, `{"memberships":[
+				{"member":{"name":"users/acct-a"}},
+				{"member":{"name":"users/7","email":"carla@example.com"}},
+				{"member":{"name":"users/8","displayName":"Diego"}}
+			]}`), nil
+		case "/v1/spaces/hidden/members":
+			memberCalls.Add(1)
+			return jsonResponse(http.StatusOK, `{"memberships":[{"member":{"name":"users/acct-a"}},{"member":{"name":"users/99","type":"HUMAN"}}]}`), nil
+		}
+		t.Errorf("unexpected request %s", r.URL.Path)
+		return jsonResponse(http.StatusNotFound, `{}`), nil
+	}))
+	s.sessions["acct-a"] = &session{token: &oauth2.Token{AccessToken: "token", TokenType: "Bearer", Expiry: time.Now().Add(time.Hour)}}
+
+	page, err := s.Spaces(context.Background(), "acct-a", "")
+	if err != nil {
+		t.Fatalf("Spaces: %v", err)
+	}
+	got := map[string]string{}
+	order := []string{}
+	for _, sp := range page.Spaces {
+		got[sp.Name] = sp.DisplayName
+		order = append(order, sp.Name)
+	}
+	want := map[string]string{"spaces/dm": "Bruno Lima", "spaces/group": "carla@example.com, Diego", "spaces/hidden": "", "spaces/team": "Plataforma"}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("%s display name = %q, want %q", k, got[k], v)
+		}
+	}
+	if strings.Join(order, ",") != "spaces/team,spaces/group,spaces/dm,spaces/hidden" {
+		t.Errorf("order = %v, want most recent first", order)
+	}
+	if n := memberCalls.Load(); n != 3 {
+		t.Fatalf("member calls = %d, want 3", n)
+	}
+	if _, err := s.Spaces(context.Background(), "acct-a", ""); err != nil {
+		t.Fatalf("second Spaces: %v", err)
+	}
+	// O que tem nome fica em cache; a DM sem nome visível é consultada de novo.
+	if n := memberCalls.Load(); n != 4 {
+		t.Fatalf("member calls after second listing = %d, want 4", n)
 	}
 }
