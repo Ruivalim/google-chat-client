@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/transfer"
 	"github.com/ruivalim/google-chat-client/internal/chat"
 )
 
@@ -35,6 +36,9 @@ type Desktop struct {
 	service     *chat.Service
 	mu          sync.Mutex
 	loginCancel context.CancelFunc
+	// loginURL é o endereço do login em andamento, para copiar e abrir em outro
+	// navegador ou container. Vazio fora de um login.
+	loginURL string
 }
 
 func (d *Desktop) State() chat.State { return d.service.State() }
@@ -77,11 +81,32 @@ func (d *Desktop) ConnectAccount(ctx context.Context, clientID string) (chat.Sta
 	defer func() {
 		cancel()
 		d.mu.Lock()
-		d.loginCancel = nil
+		d.loginCancel, d.loginURL = nil, ""
 		d.mu.Unlock()
 	}()
-	_, err := d.service.AddAccount(ctx, clientID, mygo.Shell.OpenExternal)
+	_, err := d.service.AddAccount(ctx, clientID, func(u string) error {
+		d.mu.Lock()
+		d.loginURL = u
+		d.mu.Unlock()
+		// Sem navegador padrão o login segue: o link pode ser copiado na janela.
+		_ = mygo.Shell.OpenExternal(u)
+		return nil
+	})
 	return d.State(), err
+}
+
+func (d *Desktop) LoginURL() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.loginURL
+}
+
+func (d *Desktop) CopyLoginURL() error {
+	u := d.LoginURL()
+	if u == "" {
+		return errors.New("não há login em andamento")
+	}
+	return mygo.Clipboard.Write(transfer.TextData(u))
 }
 
 func (d *Desktop) CancelLogin() {

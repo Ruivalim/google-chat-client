@@ -53,6 +53,7 @@ O app não vem com credencial embutida: você cria o projeto e importa o JSON.
    - **Acesso a dados:** adicione os escopos da tabela abaixo.
    - **Clientes:** crie um cliente do tipo **Aplicativo para computador** e baixe o JSON.
 4. No app: Configurações > **Importar arquivo JSON**, depois **Adicionar conta Google**. O login abre no navegador do sistema.
+   Para fazer o login em outro navegador ou num container (do Firefox ou do Zen, por exemplo), use **Copiar link** enquanto o login está pendente e cole lá. Copie por esse botão: a URL de uma etapa já começada no navegador não funciona em outro container, e o Google responde com um erro 400.
 
 ### Mais de um projeto
 

@@ -261,3 +261,17 @@ test.describe("vários projetos Google Cloud", () => {
     await expect(dialog.getByRole("button", { name: "Importar arquivo JSON" })).toBeEnabled();
   });
 });
+
+test("durante o login dá para copiar o link e abrir em outro container", async ({ page }) => {
+  await withBridge(page, { delays: { ConnectAccount: 5000 } });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Adicionar conta Google" }).click();
+  const copy = page.getByRole("button", { name: "Copiar link" });
+  await expect(copy).toBeVisible();
+  await expect(copy).toBeEnabled();
+  await copy.click();
+  await expect(page.getByRole("button", { name: "Link copiado" })).toBeVisible();
+  expect(await calls(page, "CopyLoginURL")).toHaveLength(1);
+  await page.getByRole("button", { name: "Cancelar" }).click();
+  expect(await calls(page, "CancelLogin")).toHaveLength(1);
+});

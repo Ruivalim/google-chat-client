@@ -78,6 +78,7 @@ function install(scenario: Scenario) {
     state,
   };
   let sent = 0;
+  let loginPolls = 0;
   const posted: ReturnType<typeof message>[] = [];
   (globalThis as unknown as { bridge: typeof bridge }).bridge = bridge;
   (globalThis as unknown as { mygo: unknown }).mygo = {
@@ -112,6 +113,13 @@ function install(scenario: Scenario) {
           bridge.state = state;
           return state;
         }
+        // O Go só conhece a URL depois de abrir o listener do callback; as
+        // primeiras consultas voltam vazias, como no app.
+        case "LoginURL":
+          loginPolls += 1;
+          return loginPolls < 3 ? "" : "https://accounts.google.com/o/oauth2/v2/auth?client_id=teste";
+        case "CopyLoginURL":
+          return undefined;
         case "RemoveProject":
           if (state.accounts.some((a) => a.clientId === args[0]))
             throw new Error("remova as contas deste projeto antes");

@@ -133,6 +133,7 @@ a {
 .connection-status {
   padding: 8px 16px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 12px;
@@ -684,6 +685,11 @@ a {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+.login-pending-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .skip-link {
   position: fixed;

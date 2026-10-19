@@ -24,6 +24,7 @@ import {
   ArrowUpload24Regular,
   Chat24Regular,
   ChatMultiple24Regular,
+  Copy24Regular,
   Dismiss24Regular,
   Open24Regular,
   People24Regular,
@@ -107,6 +108,58 @@ function IconButton({
     <Tooltip content={label} relationship="label">
       <Button {...props} aria-label={label} icon={children} />
     </Tooltip>
+  );
+}
+
+// O login abre no navegador padrão. O link copiado serve para fazer o login em
+// outro navegador ou container, por exemplo o da empresa da conta. Só o começo
+// do fluxo pode ser copiado: as etapas seguintes dependem dos cookies da aba.
+function LoginPending({ size }: { size?: "small" }) {
+  const [url, setUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = () =>
+      Desktop.loginURL()
+        .then((next) => {
+          if (stop) return;
+          setUrl(next);
+          if (!next) timer = setTimeout(poll, 250);
+        })
+        .catch(() => undefined);
+    void poll();
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+  }, []);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  return (
+    <>
+      <span className="login-pending-text" role="status">
+        <Spinner size="tiny" /> Conclua o login no navegador
+      </span>
+      <Button
+        size={size}
+        icon={<Copy24Regular />}
+        disabled={!url}
+        onClick={() =>
+          void Desktop.copyLoginURL()
+            .then(() => setCopied(true))
+            .catch(() => undefined)
+        }
+      >
+        {copied ? "Link copiado" : "Copiar link"}
+      </Button>
+      <Button size={size} onClick={() => void Desktop.cancelLogin()}>
+        Cancelar
+      </Button>
+    </>
   );
 }
 
@@ -315,11 +368,8 @@ export function App() {
             </div>
           )}
           {connecting && !settings && (
-            <div className="connection-status" role="status">
-              <Spinner size="tiny" /> Conclua o login no navegador{" "}
-              <Button size="small" onClick={() => void Desktop.cancelLogin()}>
-                Cancelar
-              </Button>
+            <div className="connection-status">
+              <LoginPending size="small" />
             </div>
           )}
           {starting ? (
@@ -424,9 +474,8 @@ export function App() {
                     </div>
                   ))}
                   {connecting ? (
-                    <div className="login-pending" role="status">
-                      <Spinner size="tiny" label="Conclua o login no navegador" />
-                      <Button onClick={() => void Desktop.cancelLogin()}>Cancelar</Button>
+                    <div className="login-pending">
+                      <LoginPending />
                     </div>
                   ) : !configured ? (
                     <p className="settings-hint">
