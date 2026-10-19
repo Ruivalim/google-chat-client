@@ -85,6 +85,11 @@ build: ## Empacota o aplicativo para a plataforma atual em build/
 	@echo "$(GREEN)▸ build$(RESET)"
 	npm run build
 
+.PHONY: appimage
+appimage: build ## Empacota o build Linux também como AppImage
+	@echo "$(GREEN)▸ appimage$(RESET)"
+	scripts/appimage.sh
+
 .PHONY: build-all
 build-all: ## Empacota Linux x64, Windows x64 e macOS universal
 	@echo "$(GREEN)▸ build-all$(RESET)"
