@@ -119,3 +119,42 @@ func TestRequestIDIsUUIDv4(t *testing.T) {
 		seen[id] = true
 	}
 }
+
+func TestAPIErrorsExplainProjectSetup(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+		want   []string
+	}{
+		{"API desativada", http.StatusForbidden,
+			`{"error":{"code":403,"message":"Google Chat API has not been used in project 760952425460 before or it is disabled.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com"}]}}`,
+			[]string{"não está ativada", "has not been used in project 760952425460"}},
+		{"escopo faltando", http.StatusForbidden,
+			`{"error":{"code":403,"message":"Request had insufficient authentication scopes.","details":[{"reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}}`,
+			[]string{"escopos", "insufficient authentication scopes"}},
+		{"app de Chat sem configuração", http.StatusNotFound,
+			`{"error":{"code":404,"message":"Google Chat app not found. To create a Chat app, you must turn on the Chat API and configure the app in the Google Cloud console.","status":"NOT_FOUND"}}`,
+			[]string{"aba Configuração", "Chat app not found"}},
+		{"403 sem motivo conhecido", http.StatusForbidden,
+			`{"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}`,
+			[]string{"recusou a permissão", "does not have permission"}},
+		{"403 sem corpo", http.StatusForbidden, ``, []string{"recusou a permissão"}},
+		{"404 de conversa", http.StatusNotFound, `{"error":{"code":404,"message":"Requested entity was not found."}}`, []string{"não está mais disponível"}},
+		{"500 com mensagem", http.StatusInternalServerError, `{"error":{"code":500,"message":"Internal error encountered."}}`, []string{"(500)", "Internal error"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := apiService(t, func(*http.Request) (*http.Response, error) { return jsonResponse(c.status, c.body), nil })
+			_, err := s.Spaces(context.Background(), "acct-a", "")
+			if err == nil {
+				t.Fatal("sem erro")
+			}
+			for _, w := range c.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Errorf("err = %q, want contendo %q", err, w)
+				}
+			}
+		})
+	}
+}

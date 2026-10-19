@@ -42,18 +42,7 @@ func (s *Service) api(ctx context.Context, accountID, method, path string, query
 	}
 	defer r.Body.Close()
 	if r.StatusCode < 200 || r.StatusCode >= 300 {
-		switch r.StatusCode {
-		case http.StatusUnauthorized:
-			return errors.New("a sessão foi recusada; conecte essa conta novamente")
-		case http.StatusForbidden:
-			return errors.New("o Google recusou a permissão; confira os escopos, a Chat API e a liberação no Workspace")
-		case http.StatusTooManyRequests:
-			return errors.New("o Google limitou as consultas; aguarde um pouco antes de atualizar")
-		case http.StatusNotFound:
-			return errors.New("essa conversa ou mensagem não está mais disponível para a conta selecionada")
-		default:
-			return fmt.Errorf("o Google Chat retornou um erro (%d); tente novamente", r.StatusCode)
-		}
+		return apiError(r)
 	}
 	if out == nil {
 		return nil
@@ -62,6 +51,50 @@ func (s *Service) api(ctx context.Context, accountID, method, path string, query
 		return errors.New("a resposta do Google Chat não pôde ser lida")
 	}
 	return nil
+}
+
+// googleError é o corpo de erro das APIs do Google: a mensagem é legível e o
+// reason do ErrorInfo diz a causa exata, como API desativada no projeto.
+type googleError struct {
+	Error struct {
+		Message string `json:"message"`
+		Details []struct {
+			Reason string `json:"reason"`
+		} `json:"details"`
+	} `json:"error"`
+}
+
+func apiError(r *http.Response) error {
+	var body googleError
+	_ = json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&body)
+	said := strings.TrimSpace(body.Error.Message)
+	reasons := []string{}
+	for _, d := range body.Error.Details {
+		reasons = append(reasons, d.Reason)
+	}
+	with := func(text string) error {
+		if said == "" {
+			return errors.New(text)
+		}
+		return fmt.Errorf("%s. O Google disse: %s", text, said)
+	}
+	switch {
+	case slices.Contains(reasons, "SERVICE_DISABLED"):
+		return with("a Google Chat API não está ativada no projeto desta conta; ative em APIs e serviços > Biblioteca, no Google Cloud")
+	case slices.Contains(reasons, "ACCESS_TOKEN_SCOPE_INSUFFICIENT"):
+		return with("faltou uma permissão de Chat nesta sessão; confira os escopos em Acesso a dados e conecte a conta de novo")
+	case r.StatusCode == http.StatusNotFound && strings.Contains(strings.ToLower(said), "chat app not found"):
+		return with("o app de Chat não está configurado no projeto; preencha nome, ícone e descrição na aba Configuração da Google Chat API")
+	case r.StatusCode == http.StatusUnauthorized:
+		return errors.New("a sessão foi recusada; conecte essa conta novamente")
+	case r.StatusCode == http.StatusForbidden:
+		return with("o Google recusou a permissão")
+	case r.StatusCode == http.StatusTooManyRequests:
+		return errors.New("o Google limitou as consultas; aguarde um pouco antes de atualizar")
+	case r.StatusCode == http.StatusNotFound:
+		return errors.New("essa conversa ou mensagem não está mais disponível para a conta selecionada")
+	}
+	return with(fmt.Sprintf("o Google Chat retornou um erro (%d)", r.StatusCode))
 }
 
 func (s *Service) Spaces(ctx context.Context, accountID, pageToken string) (SpacePage, error) {
