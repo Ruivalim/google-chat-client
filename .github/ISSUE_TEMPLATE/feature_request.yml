@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest something new or a change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem it solves
+      description: The situation where you miss it. This matters more than the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+  - type: textarea
+    id: api
+    attributes:
+      label: Does the Google Chat API allow it?
+      description: If you know, link the method in the API reference. Some things (typing indicators, others' presence) don't exist in the API.

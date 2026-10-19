@@ -1,124 +1,142 @@
-# Google Chat Client
+<p align="center"><img src="resources/icon.png" width="96" height="96" alt=""></p>
 
-App desktop para usar o Google Chat com várias contas Google Workspace na mesma janela, inclusive contas de empresas diferentes. Cada conta tem a própria sessão, as próprias conversas e os próprios rascunhos. Roda em Linux, Windows e macOS.
+<h1 align="center">Google Chat Client</h1>
 
-Chat vem primeiro. Calendar, Meet e Gmail ficam para depois.
+<p align="center">A desktop app for Google Chat with several Google Workspace accounts in one window, including accounts from different companies.</p>
 
-> **Estado:** compila, abre e passa nos testes, mas ainda não foi usado com uma conta Google de verdade. Os testes simulam o Google e a ponte com o Go. O primeiro login real é o próximo passo, e a lista do que conferir nele está [no fim](#o-que-falta).
+<p align="center"><strong>English</strong> · <a href="README.pt-BR.md">Português</a></p>
 
-## Como é feito
+Each account keeps its own session, conversations, notifications and drafts. Runs on Linux, Windows and macOS, in English or Portuguese.
 
-| Parte | O quê |
+> **Independent project.** This is not a Google product and is not affiliated with Google. Google, Google Chat and Google Workspace are trademarks of Google LLC.
+
+## Download
+
+Installers are on the [Releases](https://github.com/Ruivalim/google-chat-client/releases) page:
+
+| System | File |
 | --- | --- |
-| Janela e empacotamento | [MyGo](https://mygo.egoist.dev) 0.5.5, com a webview do sistema (WebKitGTK, WebView2, WKWebView) |
-| Backend | Go 1.27: OAuth, chaveiro do sistema e chamadas à API do Chat |
-| Interface | React 19, TypeScript 7, [Fluent UI](https://react.fluentui.dev) 9 |
-| Ponte | O MyGo gera `src/mygo.ts` a partir dos métodos de `desktop.go` |
+| Linux | `.AppImage` (runs as is), `.deb`, or `.tar.gz` with `install.sh` |
+| Windows | `Google Chat Client Setup … amd64.exe` |
+| macOS | universal `.dmg` (Apple Silicon and Intel) |
 
-Token e client secret nunca chegam à interface: ficam no Go e no chaveiro. O `accounts.json` guarda só os projetos importados (client ID e nome) e, de cada conta, nome, email, domínio e o projeto por onde ela entrou.
+The packages are **not signed** yet. On Windows, SmartScreen warns: click "More info" and "Run anyway". On macOS, Gatekeeper blocks the first launch: open it from System Settings > Privacy & Security > "Open Anyway".
+
+On Linux the app needs GTK 3, WebKitGTK 4.1 and a Secret Service for the keyring (GNOME Keyring, KWallet or KeePassXC). On Debian and Ubuntu: `sudo apt install libwebkit2gtk-4.1-0 libsecret-1-0`. The tray icon uses `libayatana-appindicator3`. Windows 10 needs the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/); Windows 11 ships with it.
+
+## Set up Google Cloud
+
+The app ships no built-in credentials: you create a Google Cloud project and import its JSON. The same steps, with links to each console page and a button to copy the scopes, are in the app under **How to connect**.
+
+1. **Create a project just for this app.** The name shown at sign-in (Branding) and the access rules apply to everything that uses the project. To get the **Internal** audience, create it signed in with the company account, inside its organization; a personal project only offers External.
+2. **Enable the Google Chat API** and, on its Configuration tab, fill in the name, an icon URL and a description, with interactive features turned off. Without the API nothing works (`SERVICE_DISABLED`). Without the configuration, reading works but sending fails with "Google Chat app not found".
+3. **Google Auth Platform:**
+   - **Branding:** the name shown at sign-in and your email.
+   - **Audience:** **Internal** accepts only accounts of the organization that owns the project, and anyone else gets `org_internal`. **External** accepts accounts from any company.
+   - **Data access:** the scopes in the table below.
+4. **With the External audience, choose testing or production:**
+   - **In testing**, only accounts listed under Audience > Test users can sign in (up to 100). Others see "has not completed the Google verification process (...) can only be accessed by developer-approved testers". Sessions expire every 7 days.
+   - **In production** (Audience > Publish app), sessions don't expire weekly. Without verification, sign-in shows the unverified app screen, capped at 100 users for the project's lifetime. The documentation says restricted scopes need verification in production; if Google blocks sign-in, go back to testing.
+5. **Clients:** create a **Desktop app** client, download the JSON, import it in the app (Settings > **Import JSON file**) and use **Add Google account**. Sign-in opens in the system browser.
+
+To sign in from another browser or a container (Firefox or Zen containers, for example), use **Copy link** while sign-in is pending and paste it there. Copy it with that button: the URL of a step already started in a browser doesn't work in another container, and Google answers with a 400 error.
+
+| Scope | Why |
+| --- | --- |
+| `openid`, `email`, `profile` | Know which account signed in |
+| `chat.spaces.readonly` | List conversations and spaces |
+| `chat.memberships.readonly` | Name DMs and group chats, which the API returns without a name |
+| `chat.messages` | Read and send messages and attachments |
+
+### More than one project
+
+You can import several JSON files, one per project, and each account signs in through the project you pick in Settings > Google Cloud projects. Two cases call for it:
+
+- **Avoid the 7 days where you can.** In the company where you are an admin, a project with the **Internal** audience has no weekly session expiry. Other companies stay on an **External** project.
+- **A company that requires its own project.** If a company's admin only allows apps from their own project, import that project's JSON and connect the account through it.
+
+Each account renews its session with the credentials of the project it signed in through. A project can only be removed once no account uses it; to move an account to another project, connect it again through that project.
+
+### What to expect from Google
+
+- **In testing mode, sessions expire after 7 days.** With the External audience and *Testing* status, Google issues refresh tokens that expire in a week. When one expires, the app tells you and you add the account again.
+- **`chat.messages` is a restricted scope.** Published without verification, the app shows the "unverified app" screen and accepts at most 100 users for the project's lifetime. The policy says restricted scopes can't be used in production without review; the documentation doesn't say whether Google only warns or blocks sign-in in that case.
+- **Each company can block the app.** If signing in with a company account returns `admin_policy_enforced`, that Workspace's admin has to mark the client ID as trusted in Admin console > Security > Access and data control > API controls.
+
+Sources: [publishing and test users](https://support.google.com/cloud/answer/15549945), [scope policy in production](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance), [refresh token expiration](https://developers.google.com/identity/protocols/oauth2#expiration), [Chat scope classification](https://developers.google.com/workspace/chat/authenticate-authorize), [app access control in Workspace](https://knowledge.workspace.google.com/admin/apps/control-which-apps-access-google-workspace-data).
+
+## What it does
+
+- Several accounts, switched from the left rail, each told apart by its organization's color and initials; several Google Cloud projects, each account in its own.
+- Paginated conversation list, with a local filter and tabs for chats and spaces.
+- Paginated history, threads in a side panel, sending and replying in threads.
+- Safe retries: if sending fails, the text stays and the retry reuses the same `requestId`, so Google doesn't duplicate the message.
+- Attachments up to 200 MB: send them (one per message, the text goes with the first), download the ones you receive, and open Drive files in Drive. If sending fails midway, the retry picks up where it stopped.
+- System notifications for new messages in any account, with unread counters. The interval (15 s to 5 min) and the on/off switch are in Settings.
+- System tray: closing the window hides the app and notifications keep coming; **Quit** in the tray menu exits.
+- English and Portuguese, following the system or chosen in Settings. Light, dark or system theme; keyboard and screen reader support.
+
+Tokens and the client secret never reach the UI: they stay in the Go process and the system keyring. `accounts.json` holds only the imported projects (client ID and name) and, for each account, its name, email, domain and the project it signed in through.
+
+## Known limits
+
+- Notifications come from periodic checks, up to one interval late, and only while the app runs (window or tray).
+- Unread counts start when the app opens: syncing Google's read state would need the `chat.users.readstate` scope.
+- There is no typing indicator or presence for others: the API doesn't offer them. Accepting space invitations from the app isn't possible for the same reason.
+- Messages show as text and links, without Google Chat's formatting or cards.
+
+Not yet tested with real accounts: signing in a second organization through the same External project, an account signing in through an Internal project, and the installers running on Windows and macOS (so far they were only built in CI).
+
+What the API offers and what it lacks is in [docs/google-chat-api.md](docs/google-chat-api.md) (in Portuguese).
+
+## Next steps
+
+1. Unread state synced with Google (`chat.users.readstate`).
+2. Real-time events (Workspace Events API + Pub/Sub) instead of periodic checks.
+3. Message formatting, image previews and cards.
+4. Edit, delete, react, search and start new conversations.
+5. Signed packages (Developer ID on macOS, a certificate on Windows).
+6. Calendar, Meet (starting with opening links) and Gmail.
+
+## Development
+
+| Part | What |
+| --- | --- |
+| Window and packaging | [MyGo](https://mygo.egoist.dev) 0.5.5, with the system web view (WebKitGTK, WebView2, WKWebView) |
+| Backend | Go 1.27: OAuth, system keyring and Chat API calls |
+| UI | React 19, TypeScript 7, [Fluent UI](https://react.fluentui.dev) 9 |
+| Languages | Catalogs in `locales/`; MyGo generates the Go package and `src/locales.ts` |
 
 ```
-main.go, desktop.go     janela, menus e os métodos que a interface chama
-internal/chat/          OAuth, sessões por conta e API do Google Chat
-src/App.tsx             interface inteira
-e2e/                    testes de interface com a ponte simulada
-docs/                   direção visual e o que a API permite
+main.go, desktop.go     window, tray and the methods the UI calls
+notify.go, files.go     notifications and files on the desktop side
+internal/chat/          OAuth, per-account sessions, Chat API and the message watcher
+locales/                language catalogs (en is the source, pt-BR the translation)
+src/App.tsx             UI
+e2e/                    UI tests against a simulated MyGo bridge
+scripts/appimage.sh     packages the Linux build as an AppImage
 ```
 
-## Rodar
-
-Precisa de Go 1.27+, [Bun](https://bun.sh) (o MyGo usa para ler a config e rodar as tarefas) e Node 24+. No Linux, também GTK 3, WebKitGTK 4.1 e um Secret Service para o chaveiro (GNOME Keyring, KWallet ou KeePassXC). No Debian e no Ubuntu: `sudo apt install libwebkit2gtk-4.1-0 libsecret-1-0`. No Windows 10 falta o [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/); o 11 já vem com ele.
+You need Go 1.27+, [Bun](https://bun.sh) (MyGo uses it to read the config and run tasks) and Node 24+.
 
 ```sh
-make setup      # dependências e o Chromium dos testes
-make dev        # app com recarga automática
-make preview    # só a interface no navegador, sem login
-make check      # lint, testes e build: o mesmo que o CI roda
-make build      # pacote da plataforma atual em build/
-make build-all  # Linux x64, Windows x64 e macOS universal
+make setup      # dependencies and the Chromium used by tests
+make dev        # app with live reload
+make preview    # UI only, in a browser, without sign-in
+make check      # lint, tests and build: the same as CI
+make build      # package for the current platform in build/
+make appimage   # the Linux build as an AppImage too
+make build-all  # Linux x64, Windows x64 and universal macOS
 ```
 
-O `make dev` grava em `Google Chat Client Dev` e o app instalado em `Google Chat Client`, no diretório de configuração do sistema (`~/.config` no Linux, `~/Library/Application Support` no macOS, `%AppData%` no Windows). Os segredos de cada um ficam em serviços separados do chaveiro, então dá para mexer no dev sem tocar nas contas do app de uso.
+`make dev` stores data under `Google Chat Client Dev` and the installed app under `Google Chat Client`, in the system config directory. Their secrets live in separate keyring services, so you can work on the dev app without touching the accounts of the one you use.
 
-O `build-all` feito no Linux gera tudo, menos o instalador do Windows (precisa do `nsis`) e o `.dmg` (só sai em macOS). O CI gera os dois: cada push na `main` deixa os pacotes dos três sistemas como artefato da run.
+`make test` runs both halves: Go with `-race` against a simulated Google (the whole OAuth flow, concurrent token refresh, API errors, the message watcher, upload and download) and the UI in Playwright with the simulated bridge.
 
-## Configurar o Google Cloud
+To ship a version, update `version` in `mygo.config.ts` and `CHANGELOG.md`, then push the tag `v<version>`: the release workflow builds the packages for the three systems and creates the release.
 
-O app não vem com credencial embutida: você cria o projeto e importa o JSON. O mesmo passo a passo, com links para cada página do console e um botão de copiar os escopos, fica no app em **Como conectar**.
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Design decisions are in [docs/design.md](docs/design.md) (in Portuguese).
 
-1. **Crie um projeto só para este app.** Não reaproveite projeto de outra coisa: o nome que aparece no login (Branding) e as regras de acesso valem para tudo o que usa o projeto. Para ter público **Interno**, crie logado com a conta da empresa, dentro da organização dela; projeto pessoal só oferece Externo.
-2. **Ative a Google Chat API** e, na aba Configuração dela, preencha nome, URL de um ícone e descrição. Sem a API ativada nada funciona (`SERVICE_DISABLED`). Sem a configuração, a leitura funciona mas o envio falha com "Google Chat app not found".
-3. **Google Auth Platform:**
-   - **Branding:** o nome que aparece no login e seu email.
-   - **Público:** **Interno** aceita só contas da organização dona do projeto, e quem é de fora toma `org_internal`. **Externo** aceita contas de qualquer empresa.
-   - **Acesso a dados:** os escopos da tabela abaixo.
-4. **Com público Externo, escolha teste ou produção:**
-   - **Em teste**, só entra quem estiver em Público > Usuários de teste (até 100). Conta fora da lista vê "has not completed the Google verification process (...) can only be accessed by developer-approved testers". A sessão vence a cada 7 dias.
-   - **Em produção** (Público > Publicar app), a sessão não vence toda semana. Sem verificação, o login mostra a tela de app não verificado, com teto de 100 usuários na vida do projeto. A documentação diz que escopo restrito precisa de verificação em produção; se o Google bloquear o login, volte para teste.
-5. **Clientes:** crie um cliente do tipo **Aplicativo para computador**, baixe o JSON, importe no app (Configurações > **Importar arquivo JSON**) e use **Adicionar conta Google**. O login abre no navegador do sistema.
-   Para fazer o login em outro navegador ou num container (do Firefox ou do Zen, por exemplo), use **Copiar link** enquanto o login está pendente e cole lá. Copie por esse botão: a URL de uma etapa já começada no navegador não funciona em outro container, e o Google responde com um erro 400.
+## License
 
-### Mais de um projeto
-
-Dá para importar vários JSON, um por projeto, e cada conta entra pelo projeto que você escolher em Configurações > Projetos Google Cloud. Serve para dois casos:
-
-- **Fugir dos 7 dias onde dá.** Na empresa em que você é admin, um projeto com público **Interno** não tem sessão vencendo toda semana. As outras empresas continuam num projeto **Externo**.
-- **Empresa que exige projeto próprio.** Se o admin de uma empresa só libera app de projeto dela, importe o JSON desse projeto e conecte a conta por ele.
-
-Cada conta renova a sessão com as credenciais do projeto por onde entrou. Um projeto só sai quando nenhuma conta usa ele; para trocar uma conta de projeto, basta conectá-la de novo pelo outro.
-
-| Escopo | Por quê |
-| --- | --- |
-| `openid`, `email`, `profile` | Saber qual conta entrou |
-| `chat.spaces.readonly` | Listar conversas e espaços |
-| `chat.memberships.readonly` | Dar nome às DMs e grupos, que a API entrega sem nome |
-| `chat.messages` | Ler e enviar mensagens |
-
-### O que esperar do Google
-
-- **Em modo de teste, a sessão vence em 7 dias.** Com público Externo e status *Testing*, o Google emite refresh token que expira em uma semana. Quando expirar, o app avisa e basta adicionar a conta de novo. A documentação só cita essa regra para o modo de teste.
-- **`chat.messages` é escopo restrito.** Publicado sem verificação, o app mostra a tela de "app não verificado" e aceita no máximo 100 usuários pela vida inteira do projeto. A política diz que escopo restrito não pode ser usado em produção sem revisão; não achei na documentação se o Google só avisa ou bloqueia o login nesse caso, então produção é algo a testar. A verificação de escopo restrito é um processo à parte.
-- **Cada empresa pode bloquear o app.** Se o login de uma conta corporativa der `admin_policy_enforced`, o admin daquele Workspace precisa marcar o client ID como confiável em Admin console > Segurança > Acesso e controle de dados > Controles de API.
-
-Fontes: [publicação e teto de usuários](https://support.google.com/cloud/answer/15549945), [política de escopos em produção](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance), [expiração de refresh token](https://developers.google.com/identity/protocols/oauth2#expiration), [público e usuários de teste](https://support.google.com/cloud/answer/15549945), [classificação dos escopos do Chat](https://developers.google.com/workspace/chat/authenticate-authorize), [controle de apps no Workspace](https://knowledge.workspace.google.com/admin/apps/control-which-apps-access-google-workspace-data).
-
-## O que funciona
-
-- Várias contas, troca pela faixa da esquerda, cada uma identificada pela cor e pelas iniciais da organização.
-- Vários projetos Google Cloud, cada conta no seu.
-- Lista de conversas paginada, com filtro local e abas de conversas e espaços.
-- Histórico paginado, threads em painel lateral, envio e resposta em thread.
-- Reenvio seguro: se o envio falhar, o texto fica e a nova tentativa usa o mesmo `requestId`, então o Google não duplica a mensagem.
-- Rascunho separado por conta, conversa e thread (só em memória).
-- Anexos: enviar arquivos de até 200 MB (um por mensagem, o texto vai com o primeiro), baixar os recebidos e abrir no Drive os que vêm de lá. Se o envio falhar no meio, a nova tentativa continua de onde parou, sem subir de novo nem duplicar mensagem.
-- Tema claro, escuro ou do sistema; teclado e leitor de tela tratados.
-- A conversa aberta se atualiza a cada 15 segundos.
-- Notificação do sistema para mensagem nova em qualquer conta, com contador de não lidas na faixa e na lista. Clicar na notificação abre a conversa. O intervalo (15 s a 5 min) e o liga e desliga ficam em Configurações. Só funciona com o app aberto, e as não lidas contam desde que ele abriu: o estado de leitura do Google pediria outro escopo.
-
-## Testes
-
-`make test` roda as duas metades:
-
-- **Go** (`internal/chat`, com `-race`): o fluxo OAuth inteiro contra um Google simulado (callback com `state` forjado, consentimento negado, bloqueio do admin, escopo faltando, identidade inválida), renovação de token concorrente, sessão vencida, erros HTTP, JSON truncado e config corrompida.
-- **Interface** (`e2e/`, Playwright): o build de produção com a ponte simulada. Troca rápida de conta, reenvio idempotente, rascunho por conversa, Enter e Shift+Enter com IME, thread, links e erro com nova tentativa.
-
-## O que falta
-
-No primeiro login real (Workspace, projeto Externo em teste) já funcionaram: login, lista de conversas, histórico paginado, nome dos remetentes e reconhecimento das próprias mensagens. Falta conferir:
-
-- Nome das DMs e dos grupos na lista de conversas.
-- Envio e resposta em thread, depois de configurar o app de Chat.
-- Remover e reconectar conta.
-- Login de uma segunda organização no mesmo projeto Externo, e de uma conta por um projeto Interno.
-- Instaladores rodando de fato no Windows e no macOS (até agora só foram compilados).
-
-Depois disso, em ordem:
-
-1. Não lidas sincronizadas com o Google, com `chat.users.readstate`.
-2. Eventos em tempo real (Workspace Events API + Pub/Sub), no lugar da consulta periódica.
-3. Formatação das mensagens, prévia de imagens e cards.
-4. Editar, apagar, reagir, buscar e começar conversa nova.
-5. Assinatura dos pacotes para distribuir (Developer ID no macOS, certificado no Windows).
-6. Calendar, Meet (começando por abrir o link) e Gmail.
-
-O que a API permite e o que não existe nela (indicador de digitação, presença dos colegas) está em [docs/google-chat-api.md](docs/google-chat-api.md). As decisões visuais estão em [docs/design.md](docs/design.md).
+[MIT](LICENSE).
