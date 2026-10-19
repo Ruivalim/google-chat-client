@@ -315,3 +315,21 @@ test.describe("passo a passo de conexão", () => {
     await expect(page.getByRole("dialog", { name: "Como conectar" })).toBeVisible();
   });
 });
+
+test("aviso com URL longa quebra linha e o link abre no navegador", async ({ page }) => {
+  const url = "https://console.developers.google.com/apis/api/chat.googleapis.com/overview?project=760952425460";
+  await withBridge(page, {
+    failOnce: {
+      Spaces: `a Google Chat API não está ativada. O Google disse: enable it by visiting ${url} then retry.`,
+    },
+  });
+  await page.goto("/");
+  const notice = page.locator(".list-notice .fui-MessageBar");
+  await expect(notice).toBeVisible();
+  const [box, list] = await Promise.all([notice.boundingBox(), page.locator(".conversations").boundingBox()]);
+  if (!box || !list) throw new Error("sem posição");
+  expect(box.x + box.width).toBeLessThanOrEqual(list.x + list.width);
+  expect(await notice.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+  await notice.getByRole("link", { name: url }).click();
+  await expect.poll(() => calls(page, "OpenLink")).toEqual([{ method: "OpenLink", args: [url] }]);
+});

@@ -838,3 +838,7 @@ a {
 .guide-open {
   margin: -4px 0 8px;
 }
+.notice-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

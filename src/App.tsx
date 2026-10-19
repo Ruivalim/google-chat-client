@@ -317,7 +317,9 @@ function ConnectGuide({ open, onClose }: { open: boolean; onClose: () => void })
 function Notice({ children }: { children: ReactNode }) {
   return (
     <MessageBar intent="error" layout="multiline">
-      <MessageBarBody>{children}</MessageBarBody>
+      <MessageBarBody className="notice-body">
+        {typeof children === "string" ? linkify(children) : children}
+      </MessageBarBody>
     </MessageBar>
   );
 }
@@ -964,6 +966,27 @@ function Workspace({ account, onSettings }: { account: Account; onSettings: () =
 
 const linkPattern = /(https?:\/\/[^\s<>]*[^\s<>.,;:!?)\]'"])/g;
 
+// Links abrem no navegador do sistema, nunca dentro da janela do app.
+function linkify(text: string) {
+  return text.split(linkPattern).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        // biome-ignore lint/suspicious/noArrayIndexKey: os pedaços vêm de um split fixo do texto
+        key={i}
+        href={part}
+        onClick={(event) => {
+          event.preventDefault();
+          void openLink(part);
+        }}
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+}
+
 function spaceName(space: Space) {
   return space.displayName || `${space.spaceType === "SPACE" ? "Espaço" : "Conversa"} ${space.name.split("/").at(-1)}`;
 }
@@ -1178,25 +1201,7 @@ function MessageRow({
             {m.threadReply && <span className="reply-label">Na thread</span>}
           </header>
           {m.text ? (
-            <p className="message-text">
-              {m.text.split(linkPattern).map((part, i) =>
-                /^https?:\/\//.test(part) ? (
-                  <a
-                    // biome-ignore lint/suspicious/noArrayIndexKey: os pedaços vêm de um split fixo do texto
-                    key={i}
-                    href={part}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      void openLink(part);
-                    }}
-                  >
-                    {part}
-                  </a>
-                ) : (
-                  part
-                ),
-              )}
-            </p>
+            <p className="message-text">{linkify(m.text)}</p>
           ) : (
             <p className="unsupported-content">Conteúdo disponível no Google Chat</p>
           )}
