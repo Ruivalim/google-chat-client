@@ -10,8 +10,10 @@ export type Scenario = {
   accounts?: number;
   // atraso em ms por "Método" ou "Método:primeiro-argumento"
   delays?: Record<string, number>;
-  // mensagem de erro por "Método" ou "Método:primeiro-argumento"; vale para a próxima chamada
+  // mensagem de erro por "Método" ou "Método:algum-argumento"; vale para a próxima chamada
   failOnce?: Record<string, string>;
+  // o que o diálogo de arquivos devolve
+  pickFiles?: { id: string; name: string; size: number; tooLarge: boolean }[];
 };
 
 export type Call = { method: string; args: unknown[] };
@@ -104,10 +106,11 @@ function install(scenario: Scenario) {
       const key = `${name}:${String(args[0] ?? "")}`;
       const delay = scenario.delays?.[key] ?? scenario.delays?.[name] ?? 0;
       if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-      const failure = bridge.failOnce[key] ?? bridge.failOnce[name];
-      if (failure) {
-        delete bridge.failOnce[key];
-        delete bridge.failOnce[name];
+      // A chave pode ser o método, ou o método com qualquer um dos argumentos.
+      const failKey = [name, key, ...args.map((arg) => `${name}:${String(arg)}`)].find((k) => k in bridge.failOnce);
+      if (failKey) {
+        const failure = bridge.failOnce[failKey];
+        delete bridge.failOnce[failKey];
         throw new Error(failure);
       }
       switch (name) {
@@ -161,19 +164,70 @@ function install(scenario: Scenario) {
             messages: [
               message(space, 1, "Bom dia, o deploy passou.", "999"),
               message(space, 2, "Detalhes em https://exemplo.com/tickets/42.", "111"),
+              {
+                ...message(space, 3, "", "999"),
+                attachment: [
+                  {
+                    name: `${space}/messages/m3/attachments/a1`,
+                    contentName: "planilha.xlsx",
+                    contentType: "application/vnd.ms-excel",
+                    source: "UPLOADED_CONTENT",
+                    attachmentDataRef: { resourceName: "recurso/planilha" },
+                    downloadUri: "https://chat.google.com/download/planilha",
+                  },
+                  {
+                    name: `${space}/messages/m3/attachments/a2`,
+                    contentName: "Proposta no Drive",
+                    contentType: "application/vnd.google-apps.document",
+                    source: "DRIVE_FILE",
+                    driveDataRef: { driveFileId: "drive123" },
+                    downloadUri: "",
+                  },
+                ],
+              },
               ...mine,
             ],
             nextPageToken: "",
           };
         }
-        case "SendMessage":
+        case "SendMessage": {
           sent += 1;
+          const ref = args[5] as { resourceName?: string } | null;
           posted.push({
             ...message(String(args[1]), 40 + sent, String(args[2]), String(args[0])),
             thread: { name: String(args[3]) || `${args[1]}/threads/novo${sent}` },
             threadReply: Boolean(args[3]),
-          });
+            ...(ref
+              ? {
+                  attachment: [
+                    {
+                      name: `x${sent}`,
+                      contentName: String(ref.resourceName).replace("r/", ""),
+                      contentType: "",
+                      source: "UPLOADED_CONTENT",
+                      attachmentDataRef: { resourceName: String(ref.resourceName) },
+                      downloadUri: "",
+                    },
+                  ],
+                }
+              : {}),
+          } as ReturnType<typeof message>);
           return posted.at(-1);
+        }
+        case "PickFiles":
+          return (
+            scenario.pickFiles ?? [
+              { id: "f1", name: "relatorio.pdf", size: 2_500_000, tooLarge: false },
+              { id: "f2", name: "foto.png", size: 300_000, tooLarge: false },
+            ]
+          );
+        case "UploadAttachment":
+          return { resourceName: `r/${args[2]}`, attachmentUploadToken: `tok-${args[2]}` };
+        case "DownloadAttachment":
+          return `/home/teste/Downloads/${args[2]}`;
+        case "ForgetFile":
+        case "ShowInFolder":
+          return undefined;
         default:
           return state;
       }

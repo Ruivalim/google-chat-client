@@ -37,6 +37,7 @@ type Desktop struct {
 	mu          sync.Mutex
 	loginCancel context.CancelFunc
 	watcher     *chat.Watcher
+	picked      map[string]string // arquivos escolhidos no diálogo, por ID
 	// loginURL é o endereço do login em andamento, para copiar e abrir em outro
 	// navegador ou container. Vazio fora de um login.
 	loginURL string
@@ -154,10 +155,10 @@ func (d *Desktop) Messages(ctx context.Context, accountID, space, pageToken, thr
 	return d.service.Messages(ctx, accountID, space, pageToken, thread)
 }
 
-func (d *Desktop) SendMessage(ctx context.Context, accountID, space, text, thread, requestID string) (chat.Message, error) {
+func (d *Desktop) SendMessage(ctx context.Context, accountID, space, text, thread, requestID string, attachment *chat.AttachmentDataRef) (chat.Message, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	return d.service.SendMessage(ctx, accountID, space, text, thread, requestID)
+	return d.service.SendMessage(ctx, accountID, space, text, thread, requestID, attachment)
 }
 
 func (d *Desktop) OpenLink(raw string) error {

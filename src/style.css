@@ -478,12 +478,6 @@ a {
   text-underline-offset: 3px;
 }
 .unsupported-content,
-.attachment-label {
-  color: var(--muted);
-  font-size: 0.8125rem;
-  margin: 8px 0;
-  overflow-wrap: anywhere;
-}
 .message .thread-link {
   color: var(--accent);
   margin-top: 8px;
@@ -529,8 +523,9 @@ a {
   font-size: 0.875rem;
   line-height: 1.6;
 }
+/* O foco já aparece na borda do .composer inteiro (focus-within). */
 .composer textarea:focus-visible {
-  outline-offset: 0;
+  outline: none;
 }
 .composer textarea::placeholder {
   color: var(--muted);
@@ -877,4 +872,50 @@ a {
 .notification-setting label[for="check-every"] {
   margin-left: auto;
   font-size: 0.8125rem;
+}
+.attachment,
+.composer-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 420px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 0.8125rem;
+}
+.attachment {
+  margin-top: 6px;
+}
+.attachment svg,
+.composer-file > svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-size {
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.composer-files {
+  list-style: none;
+  margin: 0;
+  padding: 8px 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.composer-file.too-large {
+  border-color: #c4314b;
+}
+.composer-file.too-large .file-size {
+  color: #c4314b;
 }

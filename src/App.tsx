@@ -1,6 +1,9 @@
 import {
   Avatar,
+  type BrandVariants,
   Button,
+  createDarkTheme,
+  createLightTheme,
   Dialog,
   DialogActions,
   DialogBody,
@@ -15,18 +18,19 @@ import {
   Spinner,
   Switch,
   Tooltip,
-  webDarkTheme,
-  webLightTheme,
 } from "@fluentui/react-components";
 import {
   Add24Regular,
   ArrowClockwise24Regular,
+  ArrowDownload24Regular,
   ArrowLeft24Regular,
   ArrowUpload24Regular,
+  Attach24Regular,
   Chat24Regular,
   ChatMultiple24Regular,
   Copy24Regular,
   Dismiss24Regular,
+  Document24Regular,
   Open24Regular,
   People24Regular,
   QuestionCircle24Regular,
@@ -41,15 +45,42 @@ import { type ReactElement, type ReactNode, useEffect, useLayoutEffect, useRef, 
 import {
   type Account,
   type Activity,
+  type Attachment,
+  type AttachmentDataRef,
   Desktop,
   events,
   type Message,
   type Notifications,
+  type PickedFile,
   type Project,
   type Space,
   type State,
   type Unread,
 } from "./mygo";
+
+// Escala do verde de acento, do mais escuro (10) ao mais claro (160). O Fluent
+// tira dela todas as cores de marca, inclusive estados como pressionado e
+// selecionado; sem ela, sobram azuis do tema padrão.
+const brand: BrandVariants = {
+  10: "#011a12",
+  20: "#01261b",
+  30: "#013324",
+  40: "#01402d",
+  50: "#004d37",
+  60: "#005a40",
+  70: "#006b4c",
+  80: "#007a57",
+  90: "#1a8a66",
+  100: "#339a77",
+  110: "#4daa88",
+  120: "#66b99a",
+  130: "#80c8ac",
+  140: "#99d6bf",
+  150: "#b3e3d2",
+  160: "#cdefe4",
+};
+const baseDark = createDarkTheme(brand);
+const baseLight = createLightTheme(brand);
 
 const emptyState: State = {
   projects: [],
@@ -69,7 +100,12 @@ const checkIntervals: [number, string][] = [
 
 type OpenRequest = { activity: Activity; n: number };
 const native = isMyGo();
-const drafts = new Map<string, { text: string; requestId: string }>();
+// Rascunho por conta, conversa e thread. Cada arquivo guarda a referência do
+// upload e se já virou mensagem: o reenvio continua de onde parou, sem subir de
+// novo nem duplicar mensagem (o requestId de cada uma é fixo).
+type DraftFile = PickedFile & { requestId: string; ref?: AttachmentDataRef; sent?: boolean };
+type Draft = { text: string; requestId: string; textSent?: boolean; files: DraftFile[] };
+const drafts = new Map<string, Draft>();
 const selectedSpaces = new Map<string, Space>();
 type Appearance = "system" | "light" | "dark";
 
@@ -371,7 +407,7 @@ export function App() {
   const account = state.accounts.find((a) => a.id === state.activeAccountId) ?? state.accounts[0];
   const theme = dark
     ? {
-        ...webDarkTheme,
+        ...baseDark,
         colorBrandBackground: "#006b4c",
         colorBrandBackgroundHover: "#00845e",
         colorBrandForeground1: "#77dfb5",
@@ -385,7 +421,7 @@ export function App() {
         colorCompoundBrandForeground1: "#77dfb5",
       }
     : {
-        ...webLightTheme,
+        ...baseLight,
         colorBrandBackground: "#006b4c",
         colorBrandBackgroundHover: "#00513a",
         colorBrandBackgroundPressed: "#003b2a",
@@ -1344,13 +1380,10 @@ function MessageRow({
           {m.text ? (
             <p className="message-text">{linkify(m.text)}</p>
           ) : (
-            <p className="unsupported-content">Conteúdo disponível no Google Chat</p>
+            !m.attachment?.length && <p className="unsupported-content">Conteúdo disponível no Google Chat</p>
           )}
           {m.attachment?.map((file, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: anexos não têm identificador próprio na resposta
-            <div className="attachment-label" key={i}>
-              Anexo: {file.contentName || "Arquivo"}
-            </div>
+            <MessageAttachment key={file.name || i} account={account} file={file} />
           ))}
           {onThread && (
             <Button
@@ -1369,6 +1402,77 @@ function MessageRow({
   );
 }
 
+// Arquivo enviado no Chat desce pela API; arquivo do Drive só abre no Drive.
+function MessageAttachment({ account, file }: { account: Account; file: Attachment }) {
+  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+  const [saved, setSaved] = useState("");
+  const name = file.contentName || "Arquivo";
+  const resource = file.attachmentDataRef?.resourceName ?? "";
+  const drive = file.driveDataRef?.driveFileId ?? "";
+  async function download() {
+    setState("saving");
+    try {
+      const path = await Desktop.downloadAttachment(account.id, resource, name);
+      if (path) setSaved(path);
+      setState("idle");
+    } catch {
+      setState("error");
+    }
+  }
+  return (
+    <div className="attachment">
+      <Document24Regular aria-hidden />
+      <span className="file-name" title={name}>
+        {name}
+      </span>
+      {drive ? (
+        <Button
+          size="small"
+          appearance="subtle"
+          icon={<Open24Regular />}
+          onClick={() => void openLink(`https://drive.google.com/file/d/${encodeURIComponent(drive)}/view`)}
+        >
+          Abrir no Drive
+        </Button>
+      ) : resource && native ? (
+        saved ? (
+          <Button size="small" appearance="subtle" onClick={() => void Desktop.showInFolder(saved)}>
+            Salvo · mostrar na pasta
+          </Button>
+        ) : (
+          <Button
+            size="small"
+            appearance="subtle"
+            icon={<ArrowDownload24Regular />}
+            disabled={state === "saving"}
+            aria-label={`Baixar ${name}`}
+            onClick={() => void download()}
+          >
+            {state === "saving" ? "Baixando…" : state === "error" ? "Falhou; tentar de novo" : "Baixar"}
+          </Button>
+        )
+      ) : (
+        file.downloadUri && (
+          <Button
+            size="small"
+            appearance="subtle"
+            icon={<Open24Regular />}
+            onClick={() => void openLink(file.downloadUri)}
+          >
+            Abrir no Google Chat
+          </Button>
+        )
+      )}
+    </div>
+  );
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
+}
+
 function Composer({
   account,
   space,
@@ -1381,41 +1485,103 @@ function Composer({
   onSent: (message: Message) => void;
 }) {
   const key = `${account.id}|${space.name}|${thread}`;
-  const [draft, setDraft] = useState(drafts.get(key)?.text ?? "");
-  const [sending, setSending] = useState(false);
+  const saved = drafts.get(key);
+  const [draft, setDraft] = useState(saved?.text ?? "");
+  const [files, setFiles] = useState<DraftFile[]>(saved?.files ?? []);
+  const [sending, setSending] = useState("");
   const [error, setError] = useState("");
   const input = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
+  const current = (): Draft => drafts.get(key) ?? { text: draft, requestId: crypto.randomUUID(), files };
+  function store(next: Draft) {
+    drafts.set(key, next);
+    setFiles(next.files);
+  }
   function change(text: string) {
     setDraft(text);
-    drafts.set(key, { text, requestId: crypto.randomUUID() });
+    // Texto novo é mensagem nova: outro requestId, para o Google não confundir.
+    drafts.set(key, { ...current(), text, requestId: crypto.randomUUID(), textSent: false });
   }
-  async function send() {
-    if (!draft.trim() || sendingRef.current) return;
-    sendingRef.current = true;
-    setSending(true);
+  async function pick() {
     setError("");
-    const attempt = drafts.get(key) ?? {
-      text: draft,
-      requestId: crypto.randomUUID(),
-    };
+    try {
+      const picked = await Desktop.pickFiles();
+      if (!picked.length) return;
+      const base = current();
+      store({ ...base, files: [...base.files, ...picked.map((f) => ({ ...f, requestId: crypto.randomUUID() }))] });
+      requestAnimationFrame(() => input.current?.focus());
+    } catch (err) {
+      setError(describe(err));
+    }
+  }
+  function unpick(id: string) {
+    const base = current();
+    store({ ...base, files: base.files.filter((f) => f.id !== id) });
+    void Desktop.forgetFile(id);
+  }
+  const pending = files.filter((f) => !f.sent);
+  const blocked = pending.some((f) => f.tooLarge);
+  async function send() {
+    if ((!draft.trim() && pending.length === 0) || blocked || sendingRef.current) return;
+    sendingRef.current = true;
+    setError("");
+    let attempt = current();
     drafts.set(key, attempt);
     try {
-      const message = await Desktop.sendMessage(account.id, space.name, attempt.text, thread, attempt.requestId);
+      if (attempt.files.length === 0) {
+        setSending("Enviando…");
+        onSent(await Desktop.sendMessage(account.id, space.name, attempt.text, thread, attempt.requestId, null));
+      }
+      // Um arquivo por mensagem; o texto vai junto com o primeiro.
+      for (const file of attempt.files) {
+        if (file.sent) continue;
+        const update = (patch: Partial<DraftFile>, extra: Partial<Draft> = {}) => {
+          attempt = {
+            ...attempt,
+            ...extra,
+            files: attempt.files.map((f) => (f.id === file.id ? { ...f, ...patch } : f)),
+          };
+          store(attempt);
+        };
+        let ref = file.ref;
+        if (!ref) {
+          setSending(`Enviando ${file.name}…`);
+          ref = await Desktop.uploadAttachment(account.id, space.name, file.id);
+          update({ ref });
+        }
+        const withText = !attempt.textSent && attempt.text.trim() !== "";
+        const message = await Desktop.sendMessage(
+          account.id,
+          space.name,
+          withText ? attempt.text : "",
+          thread,
+          withText ? attempt.requestId : file.requestId,
+          ref,
+        );
+        update({ sent: true }, withText ? { textSent: true } : {});
+        if (withText) setDraft("");
+        void Desktop.forgetFile(file.id);
+        onSent(message);
+      }
       drafts.delete(key);
       setDraft("");
-      onSent(message);
+      setFiles([]);
       requestAnimationFrame(() => input.current?.focus());
     } catch (err) {
       setError(describe(err));
     } finally {
       sendingRef.current = false;
-      setSending(false);
+      setSending("");
     }
   }
   return (
     <div className="composer-wrapper">
-      {error && <Notice>{error} O texto foi preservado; você pode tentar enviar novamente.</Notice>}
+      {error && (
+        <Notice>
+          {error} {files.length ? "O que faltou enviar ficou aqui" : "O texto foi preservado"}; você pode tentar enviar
+          novamente.
+        </Notice>
+      )}
       <form
         className="composer"
         onSubmit={(event) => {
@@ -1426,11 +1592,30 @@ function Composer({
         <label className="sr-only" htmlFor={`message-${thread ? "thread" : "main"}`}>
           {thread ? "Responder à thread" : "Escrever mensagem"}
         </label>
+        {pending.length > 0 && (
+          <ul className="composer-files" aria-label="Arquivos para enviar">
+            {pending.map((f) => (
+              <li key={f.id} className={`composer-file${f.tooLarge ? " too-large" : ""}`}>
+                <Document24Regular aria-hidden />
+                <span className="file-name">{f.name}</span>
+                <span className="file-size">{f.tooLarge ? "mais de 200 MB, o limite" : formatSize(f.size)}</span>
+                <IconButton
+                  label={`Tirar ${f.name}`}
+                  appearance="subtle"
+                  disabled={sending !== ""}
+                  onClick={() => unpick(f.id)}
+                >
+                  <Dismiss24Regular />
+                </IconButton>
+              </li>
+            ))}
+          </ul>
+        )}
         <textarea
           ref={input}
           id={`message-${thread ? "thread" : "main"}`}
           value={draft}
-          disabled={sending}
+          disabled={sending !== ""}
           placeholder={thread ? "Responder à thread…" : "Escrever uma mensagem…"}
           rows={2}
           maxLength={32000}
@@ -1443,14 +1628,22 @@ function Composer({
           }}
         />
         <div className="composer-toolbar">
+          <IconButton
+            label="Anexar arquivos"
+            appearance="subtle"
+            disabled={!native || sending !== ""}
+            onClick={() => void pick()}
+          >
+            <Attach24Regular />
+          </IconButton>
           <span className="sending-as" title={account.email}>
-            {account.email}
+            {sending || account.email}
           </span>
           <Button
             appearance="primary"
             icon={<Send24Regular />}
             type="submit"
-            disabled={sending || !draft.trim()}
+            disabled={sending !== "" || blocked || (!draft.trim() && pending.length === 0)}
             aria-label={thread ? "Enviar resposta à thread" : "Enviar mensagem"}
           >
             {sending ? "Enviando…" : "Enviar"}

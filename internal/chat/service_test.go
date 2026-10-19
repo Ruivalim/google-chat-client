@@ -138,7 +138,7 @@ func TestSendMessagePreservesRetryRequestID(t *testing.T) {
 	}))
 	s.sessions["acct-a"] = &session{token: &oauth2.Token{AccessToken: "token", TokenType: "Bearer", Expiry: time.Now().Add(time.Hour)}}
 
-	if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", "hello", "", id); err != nil {
+	if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", "hello", "", id, nil); err != nil {
 		t.Fatalf("SendMessage: %v", err)
 	}
 	if gotID != id || gotText != "hello" {
@@ -152,7 +152,7 @@ func TestSendMessageRejectsInvalidConversationBeforeRequest(t *testing.T) {
 		called = true
 		return jsonResponse(http.StatusOK, `{}`), nil
 	}))
-	_, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1?x=1", "hello", "", "")
+	_, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1?x=1", "hello", "", "", nil)
 	if err == nil {
 		t.Fatal("SendMessage accepted an invalid conversation identifier")
 	}

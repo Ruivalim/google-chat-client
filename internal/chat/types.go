@@ -58,8 +58,25 @@ type Thread struct {
 }
 
 type Attachment struct {
+	Name        string `json:"name"`
 	ContentName string `json:"contentName"`
-	DownloadURI string `json:"downloadUri"`
+	ContentType string `json:"contentType"`
+	// UPLOADED_CONTENT desce pela API do Chat; DRIVE_FILE só abre no Drive.
+	Source            string             `json:"source"`
+	AttachmentDataRef *AttachmentDataRef `json:"attachmentDataRef,omitempty"`
+	DriveDataRef      *DriveDataRef      `json:"driveDataRef,omitempty"`
+	DownloadURI       string             `json:"downloadUri"`
+}
+
+// AttachmentDataRef aponta para um arquivo enviado: resourceName serve para
+// baixar e attachmentUploadToken para anexar numa mensagem nova.
+type AttachmentDataRef struct {
+	ResourceName          string `json:"resourceName,omitempty"`
+	AttachmentUploadToken string `json:"attachmentUploadToken,omitempty"`
+}
+
+type DriveDataRef struct {
+	DriveFileID string `json:"driveFileId"`
 }
 
 type Message struct {

@@ -90,6 +90,7 @@ Fontes: [publicação e teto de usuários](https://support.google.com/cloud/answ
 - Histórico paginado, threads em painel lateral, envio e resposta em thread.
 - Reenvio seguro: se o envio falhar, o texto fica e a nova tentativa usa o mesmo `requestId`, então o Google não duplica a mensagem.
 - Rascunho separado por conta, conversa e thread (só em memória).
+- Anexos: enviar arquivos de até 200 MB (um por mensagem, o texto vai com o primeiro), baixar os recebidos e abrir no Drive os que vêm de lá. Se o envio falhar no meio, a nova tentativa continua de onde parou, sem subir de novo nem duplicar mensagem.
 - Tema claro, escuro ou do sistema; teclado e leitor de tela tratados.
 - A conversa aberta se atualiza a cada 15 segundos.
 - Notificação do sistema para mensagem nova em qualquer conta, com contador de não lidas na faixa e na lista. Clicar na notificação abre a conversa. O intervalo (15 s a 5 min) e o liga e desliga ficam em Configurações. Só funciona com o app aberto, e as não lidas contam desde que ele abriu: o estado de leitura do Google pediria outro escopo.
@@ -113,12 +114,11 @@ No primeiro login real (Workspace, projeto Externo em teste) já funcionaram: lo
 
 Depois disso, em ordem:
 
-1. Enviar e baixar anexos (a API aceita até 200 MB com o escopo atual).
-2. Não lidas sincronizadas com o Google, com `chat.users.readstate`.
-3. Eventos em tempo real (Workspace Events API + Pub/Sub), no lugar da consulta periódica.
-4. Formatação das mensagens e cards.
-5. Editar, apagar, reagir, buscar e começar conversa nova.
-6. Assinatura dos pacotes para distribuir (Developer ID no macOS, certificado no Windows).
-7. Calendar, Meet (começando por abrir o link) e Gmail.
+1. Não lidas sincronizadas com o Google, com `chat.users.readstate`.
+2. Eventos em tempo real (Workspace Events API + Pub/Sub), no lugar da consulta periódica.
+3. Formatação das mensagens, prévia de imagens e cards.
+4. Editar, apagar, reagir, buscar e começar conversa nova.
+5. Assinatura dos pacotes para distribuir (Developer ID no macOS, certificado no Windows).
+6. Calendar, Meet (começando por abrir o link) e Gmail.
 
 O que a API permite e o que não existe nela (indicador de digitação, presença dos colegas) está em [docs/google-chat-api.md](docs/google-chat-api.md). As decisões visuais estão em [docs/design.md](docs/design.md).

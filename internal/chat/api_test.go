@@ -74,7 +74,7 @@ func TestThreadMustBelongToSpace(t *testing.T) {
 		if _, err := s.Messages(context.Background(), "acct-a", "spaces/s1", "", thread); err == nil {
 			t.Errorf("Messages aceitou thread %q", thread)
 		}
-		if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", "oi", thread, ""); err == nil {
+		if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", "oi", thread, "", nil); err == nil {
 			t.Errorf("SendMessage aceitou thread %q", thread)
 		}
 	}
@@ -94,14 +94,14 @@ func TestSendMessageLimits(t *testing.T) {
 		return jsonResponse(http.StatusOK, `{"name":"spaces/s1/messages/m"}`), nil
 	})
 	for _, text := range []string{"", "   \n\t", strings.Repeat("a", 32001)} {
-		if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", text, "", ""); err == nil {
+		if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", text, "", "", nil); err == nil {
 			t.Errorf("SendMessage aceitou texto de %d bytes", len(text))
 		}
 	}
-	if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", "x", "", "não-é-uuid"); err == nil {
+	if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", "x", "", "não-é-uuid", nil); err == nil {
 		t.Error("SendMessage aceitou requestId inválido")
 	}
-	if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", strings.Repeat("a", 32000), "spaces/s1/threads/t1", ""); err != nil {
+	if _, err := s.SendMessage(context.Background(), "acct-a", "spaces/s1", strings.Repeat("a", 32000), "spaces/s1/threads/t1", "", nil); err != nil {
 		t.Fatalf("texto no limite: %v", err)
 	}
 	if !strings.Contains(body, `"thread":{"name":"spaces/s1/threads/t1"}`) {

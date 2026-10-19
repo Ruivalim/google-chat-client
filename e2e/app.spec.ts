@@ -401,3 +401,103 @@ test.describe("notificações e não lidas", () => {
     await expect(every).toBeDisabled();
   });
 });
+
+test.describe("arquivos", () => {
+  const openDM = async (page: import("@playwright/test").Page) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /Bruno Lima/ }).click();
+    return page.getByRole("textbox", { name: "Escrever mensagem" });
+  };
+  const sends = async (page: import("@playwright/test").Page) =>
+    (await calls(page, "SendMessage")).map((c) => ({ text: c.args[2], requestId: c.args[4], ref: c.args[5] }));
+
+  test("dois arquivos com texto viram duas mensagens, o texto na primeira", async ({ page }) => {
+    await withBridge(page);
+    const box = await openDM(page);
+    await box.fill("segue o material");
+    await page.getByRole("button", { name: "Anexar arquivos" }).click();
+    const list = page.getByRole("list", { name: "Arquivos para enviar" });
+    await expect(list.getByRole("listitem")).toHaveCount(2);
+    await expect(list).toContainText("relatorio.pdf");
+    await expect(list).toContainText("2,4 MB");
+    await box.press("Enter");
+
+    await expect(list).toHaveCount(0);
+    await expect(box).toHaveValue("");
+    const sent = await sends(page);
+    expect(sent.map((m) => [m.text, (m.ref as { attachmentUploadToken: string }).attachmentUploadToken])).toEqual([
+      ["segue o material", "tok-f1"],
+      ["", "tok-f2"],
+    ]);
+    expect(sent[0].requestId).not.toBe(sent[1].requestId);
+    expect((await calls(page, "ForgetFile")).map((c) => c.args[0])).toEqual(["f1", "f2"]);
+  });
+
+  test("falha no meio continua de onde parou, sem duplicar", async ({ page }) => {
+    // O primeiro arquivo sobe e vira mensagem; o segundo falha no upload.
+    await withBridge(page, { failOnce: { "UploadAttachment:f2": "o upload foi interrompido" } });
+    const box = await openDM(page);
+    await box.fill("segue o material");
+    await page.getByRole("button", { name: "Anexar arquivos" }).click();
+    await box.press("Enter");
+    await expect(page.getByText("O upload foi interrompido")).toBeVisible();
+    await expect(page.getByText("O que faltou enviar ficou aqui")).toBeVisible();
+    const list = page.getByRole("list", { name: "Arquivos para enviar" });
+    await expect(list.getByRole("listitem")).toHaveCount(1);
+    await expect(list).toContainText("foto.png");
+    await expect(box).toHaveValue("");
+
+    await box.press("Enter");
+    await expect(list).toHaveCount(0);
+    expect((await calls(page, "UploadAttachment")).map((c) => c.args[2])).toEqual(["f1", "f2", "f2"]);
+    expect((await sends(page)).map((m) => m.text)).toEqual(["segue o material", ""]);
+  });
+
+  test("falha no envio depois do upload reaproveita o arquivo e o requestId", async ({ page }) => {
+    await withBridge(page, { failOnce: { "SendMessage:111": "sem conexão" } });
+    const box = await openDM(page);
+    await page.getByRole("button", { name: "Anexar arquivos" }).click();
+    await page.getByRole("button", { name: "Tirar foto.png" }).click();
+    await box.press("Enter");
+    await expect(page.getByText("Sem conexão")).toBeVisible();
+    await box.press("Enter");
+    await expect(page.getByRole("list", { name: "Arquivos para enviar" })).toHaveCount(0);
+
+    expect(await calls(page, "UploadAttachment")).toHaveLength(1);
+    const [first, retry] = await sends(page);
+    expect(retry.requestId).toBe(first.requestId);
+    expect(retry.ref).toEqual(first.ref);
+  });
+
+  test("arquivo acima de 200 MB trava o envio até sair da lista", async ({ page }) => {
+    await withBridge(page, { pickFiles: [{ id: "g", name: "video.mov", size: 300 * 1024 * 1024, tooLarge: true }] });
+    const box = await openDM(page);
+    await box.fill("olha o vídeo");
+    await page.getByRole("button", { name: "Anexar arquivos" }).click();
+    await expect(page.getByText("mais de 200 MB, o limite")).toBeVisible();
+    const send = page.getByRole("button", { name: "Enviar mensagem" });
+    await expect(send).toBeDisabled();
+    await page.getByRole("button", { name: "Tirar video.mov" }).click();
+    await expect(send).toBeEnabled();
+    expect((await calls(page, "ForgetFile")).map((c) => c.args[0])).toEqual(["g"]);
+  });
+
+  test("anexo recebido: baixar, mostrar na pasta e abrir arquivo do Drive", async ({ page }) => {
+    await withBridge(page);
+    await openDM(page);
+    await expect(page.getByText("Conteúdo disponível no Google Chat")).toHaveCount(0);
+    await page.getByRole("button", { name: "Baixar planilha.xlsx" }).click();
+    await expect
+      .poll(async () => (await calls(page, "DownloadAttachment"))[0]?.args)
+      .toEqual(["111", "recurso/planilha", "planilha.xlsx"]);
+    await page.getByRole("button", { name: "Salvo · mostrar na pasta" }).click();
+    await expect
+      .poll(async () => (await calls(page, "ShowInFolder"))[0]?.args)
+      .toEqual(["/home/teste/Downloads/planilha.xlsx"]);
+
+    await page.getByRole("button", { name: "Abrir no Drive" }).click();
+    await expect
+      .poll(async () => (await calls(page, "OpenLink")).at(-1)?.args)
+      .toEqual(["https://drive.google.com/file/d/drive123/view"]);
+  });
+});

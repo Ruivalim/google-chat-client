@@ -18,11 +18,26 @@ import (
 var spacePattern = regexp.MustCompile(`^spaces/[a-zA-Z0-9_-]+$`)
 var requestIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{16,64}$|^[a-fA-F0-9-]{36}$`)
 
-func (s *Service) api(ctx context.Context, accountID, method, path string, query url.Values, body any, out any) error {
+// send assina a requisição com o token da conta e a envia pelo client dado.
+func (s *Service) send(ctx context.Context, client *http.Client, accountID string, req *http.Request) (*http.Response, error) {
 	token, err := s.accessToken(ctx, accountID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	r, err := client.Do(req)
+	if err != nil {
+		return nil, errors.New("não foi possível alcançar o Google Chat; confira a conexão e tente novamente")
+	}
+	return r, nil
+}
+
+// transfer serve para upload e download: sem o timeout total do client da API,
+// que cortaria um arquivo grande no meio. Quem limita é o contexto.
+func (s *Service) transfer() *http.Client { return &http.Client{Transport: s.http.Transport} }
+
+func (s *Service) api(ctx context.Context, accountID, method, path string, query url.Values, body any, out any) error {
+	var err error
 	var data []byte
 	if body != nil {
 		data, err = json.Marshal(body)
@@ -34,11 +49,10 @@ func (s *Service) api(ctx context.Context, accountID, method, path string, query
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
-	r, err := s.http.Do(req)
+	r, err := s.send(ctx, s.http, accountID, req)
 	if err != nil {
-		return errors.New("não foi possível alcançar o Google Chat; confira a conexão e tente novamente")
+		return err
 	}
 	defer r.Body.Close()
 	if r.StatusCode < 200 || r.StatusCode >= 300 {
@@ -193,11 +207,15 @@ func (s *Service) Messages(ctx context.Context, accountID, space, pageToken, thr
 	return page, nil
 }
 
-func (s *Service) SendMessage(ctx context.Context, accountID, space, text, thread, id string) (Message, error) {
+// SendMessage envia texto, um anexo já enviado com UploadAttachment, ou os dois.
+func (s *Service) SendMessage(ctx context.Context, accountID, space, text, thread, id string, attachment *AttachmentDataRef) (Message, error) {
 	if !spacePattern.MatchString(space) {
 		return Message{}, errors.New("identificador de conversa inválido")
 	}
-	if strings.TrimSpace(text) == "" || len(text) > 32000 {
+	if attachment != nil && attachment.AttachmentUploadToken == "" {
+		return Message{}, errors.New("o anexo não terminou de subir; tente enviar de novo")
+	}
+	if (strings.TrimSpace(text) == "" && attachment == nil) || len(text) > 32000 {
 		return Message{}, errors.New("escreva uma mensagem de até 32.000 bytes")
 	}
 	if id == "" {
@@ -208,6 +226,9 @@ func (s *Service) SendMessage(ctx context.Context, accountID, space, text, threa
 	}
 	q := url.Values{"requestId": {id}}
 	body := map[string]any{"text": text}
+	if attachment != nil {
+		body["attachment"] = []map[string]any{{"attachmentDataRef": attachment}}
+	}
 	if thread != "" {
 		if !validThread(space, thread) {
 			return Message{}, errors.New("a thread não pertence à conversa selecionada")
