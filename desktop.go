@@ -24,7 +24,12 @@ func (systemVault) Get(key string) ([]byte, error) {
 	return data, err
 }
 func (systemVault) Set(key string, value []byte) error { return mygo.Secrets.Set(key, value) }
-func (systemVault) Delete(key string) error            { return mygo.Secrets.Delete(key) }
+func (systemVault) Delete(key string) error {
+	if err := mygo.Secrets.Delete(key); err != nil && !errors.Is(err, mygo.ErrSecretNotFound) {
+		return err
+	}
+	return nil
+}
 
 type Desktop struct {
 	service     *chat.Service
@@ -56,11 +61,11 @@ func (d *Desktop) ImportCredentials(ctx context.Context) (chat.State, error) {
 	if json.NewDecoder(io.LimitReader(f, 64<<10)).Decode(&file) != nil || file.Installed.ClientID == "" {
 		return d.State(), errors.New("selecione o JSON de um cliente OAuth do tipo Aplicativo para computador, baixado no Google Cloud")
 	}
-	err = d.service.Configure(file.Installed)
+	err = d.service.ImportProject(file.Installed)
 	return d.State(), err
 }
 
-func (d *Desktop) ConnectAccount(ctx context.Context) (chat.State, error) {
+func (d *Desktop) ConnectAccount(ctx context.Context, clientID string) (chat.State, error) {
 	d.mu.Lock()
 	if d.loginCancel != nil {
 		d.mu.Unlock()
@@ -75,7 +80,7 @@ func (d *Desktop) ConnectAccount(ctx context.Context) (chat.State, error) {
 		d.loginCancel = nil
 		d.mu.Unlock()
 	}()
-	_, err := d.service.AddAccount(ctx, mygo.Shell.OpenExternal)
+	_, err := d.service.AddAccount(ctx, clientID, mygo.Shell.OpenExternal)
 	return d.State(), err
 }
 
@@ -85,6 +90,11 @@ func (d *Desktop) CancelLogin() {
 	if d.loginCancel != nil {
 		d.loginCancel()
 	}
+}
+
+func (d *Desktop) RemoveProject(clientID string) (chat.State, error) {
+	err := d.service.RemoveProject(clientID)
+	return d.State(), err
 }
 
 func (d *Desktop) SelectAccount(accountID string) (chat.State, error) {

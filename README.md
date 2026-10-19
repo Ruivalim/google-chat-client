@@ -15,7 +15,7 @@ Chat vem primeiro. Calendar, Meet e Gmail ficam para depois.
 | Interface | React 19, TypeScript 7, [Fluent UI](https://react.fluentui.dev) 9 |
 | Ponte | O MyGo gera `src/mygo.ts` a partir dos métodos de `desktop.go` |
 
-Token e client secret nunca chegam à interface: ficam no Go e no chaveiro. O `accounts.json` guarda só nome, email e domínio de cada conta.
+Token e client secret nunca chegam à interface: ficam no Go e no chaveiro. O `accounts.json` guarda só os projetos importados (client ID e nome) e, de cada conta, nome, email, domínio e o projeto por onde ela entrou.
 
 ```
 main.go, desktop.go     janela, menus e os métodos que a interface chama
@@ -54,6 +54,15 @@ O app não vem com credencial embutida: você cria o projeto e importa o JSON.
    - **Clientes:** crie um cliente do tipo **Aplicativo para computador** e baixe o JSON.
 4. No app: Configurações > **Importar arquivo JSON**, depois **Adicionar conta Google**. O login abre no navegador do sistema.
 
+### Mais de um projeto
+
+Dá para importar vários JSON, um por projeto, e cada conta entra pelo projeto que você escolher em Configurações > Projetos Google Cloud. Serve para dois casos:
+
+- **Fugir dos 7 dias onde dá.** Na empresa em que você é admin, um projeto com público **Interno** não tem sessão vencendo toda semana. As outras empresas continuam num projeto **Externo**.
+- **Empresa que exige projeto próprio.** Se o admin de uma empresa só libera app de projeto dela, importe o JSON desse projeto e conecte a conta por ele.
+
+Cada conta renova a sessão com as credenciais do projeto por onde entrou. Um projeto só sai quando nenhuma conta usa ele; para trocar uma conta de projeto, basta conectá-la de novo pelo outro.
+
 | Escopo | Por quê |
 | --- | --- |
 | `openid`, `email`, `profile` | Saber qual conta entrou |
@@ -72,6 +81,7 @@ Fontes: [expiração de refresh token](https://developers.google.com/identity/pr
 ## O que funciona
 
 - Várias contas, troca pela faixa da esquerda, cada uma identificada pela cor e pelas iniciais da organização.
+- Vários projetos Google Cloud, cada conta no seu.
 - Lista de conversas paginada, com filtro local e abas de conversas e espaços.
 - Histórico paginado, threads em painel lateral, envio e resposta em thread.
 - Reenvio seguro: se o envio falhar, o texto fica e a nova tentativa usa o mesmo `requestId`, então o Google não duplica a mensagem.
@@ -93,7 +103,7 @@ Para o primeiro login real, conferir:
 - Nome das DMs e dos remetentes com dado de verdade.
 - Se o ID do Chat bate com o `sub` da conta. O app compara os dois para saber quais mensagens são suas; a documentação não garante isso. Ver [docs/google-chat-api.md](docs/google-chat-api.md).
 - Envio, resposta em thread, remover e reconectar conta.
-- Login de uma segunda organização no mesmo projeto Externo.
+- Login de uma segunda organização no mesmo projeto Externo, e de uma conta por um projeto Interno.
 - Instaladores rodando de fato no Windows e no macOS (até agora só foram compilados).
 
 Depois disso, em ordem:

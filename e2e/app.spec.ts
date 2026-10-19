@@ -196,3 +196,68 @@ test("tooltip fica aberto enquanto o mouse está no ícone", async ({ page }) =>
   );
   expect(onTop).toBe("Usar tema escuro");
 });
+
+test.describe("vários projetos Google Cloud", () => {
+  const settings = (page: import("@playwright/test").Page) => page.getByRole("dialog", { name: "Configurações" });
+
+  test("com um projeto só, o + conecta direto por ele", async ({ page }) => {
+    await withBridge(page, { projects: 1 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Adicionar conta Google" }).click();
+    await expect
+      .poll(() => calls(page, "ConnectAccount"))
+      .toEqual([{ method: "ConnectAccount", args: ["123-abc.apps.googleusercontent.com"] }]);
+  });
+
+  test("com dois, o + abre as configurações e cada projeto conecta pelo seu", async ({ page }) => {
+    await withBridge(page, { projects: 2 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Adicionar conta Google" }).click();
+    const dialog = settings(page);
+    await expect(dialog.getByText("escolha o projeto dela na lista abaixo")).toBeVisible();
+    expect(await calls(page, "ConnectAccount")).toHaveLength(0);
+
+    const second = dialog.locator(".settings-project").filter({ hasText: "456-def" });
+    await expect(second).toContainText("Projeto 456");
+    await second.getByRole("button", { name: "Adicionar conta" }).click();
+    await expect
+      .poll(() => calls(page, "ConnectAccount"))
+      .toEqual([{ method: "ConnectAccount", args: ["456-def.apps.googleusercontent.com"] }]);
+  });
+
+  test("conta mostra por qual projeto entrou", async ({ page }) => {
+    await withBridge(page, { projects: 2 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    const dialog = settings(page);
+    await expect(dialog.getByText("ana@empresa-a.com · chat-empresa-a")).toBeVisible();
+    await expect(dialog.getByText("ana@consultoria-b.com.br · Projeto 456")).toBeVisible();
+  });
+
+  test("projeto com conta não sai; sem conta, sai", async ({ page }) => {
+    await withBridge(page, { projects: 2, accounts: 1 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    const dialog = settings(page);
+    const used = dialog.locator(".settings-project").filter({ hasText: "123-abc" });
+    const empty = dialog.locator(".settings-project").filter({ hasText: "456-def" });
+    await expect(used).toContainText("1 conta");
+    await expect(empty).toContainText("Nenhuma conta");
+
+    await used.getByRole("button", { name: "Remover" }).click({ force: true });
+    expect(await calls(page, "RemoveProject")).toHaveLength(0);
+
+    await empty.getByRole("button", { name: "Remover" }).click();
+    await expect(empty).toHaveCount(0);
+    expect((await calls(page, "RemoveProject")).map((c) => c.args[0])).toEqual(["456-def.apps.googleusercontent.com"]);
+  });
+
+  test("sem projeto, as configurações dizem o que falta em vez de um botão desativado", async ({ page }) => {
+    await withBridge(page, { configured: false });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    const dialog = settings(page);
+    await expect(dialog.getByText("Importe o arquivo JSON de um projeto")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Importar arquivo JSON" })).toBeEnabled();
+  });
+});

@@ -59,6 +59,20 @@ func Open(path string, vault Vault) (*Service, error) {
 	if s.config.Accounts == nil {
 		s.config.Accounts = []Account{}
 	}
+	if s.config.Projects == nil {
+		s.config.Projects = []Project{}
+	}
+	if legacy := s.config.LegacyClientID; legacy != "" {
+		if !slices.ContainsFunc(s.config.Projects, func(p Project) bool { return p.ClientID == legacy }) {
+			s.config.Projects = append(s.config.Projects, Project{ClientID: legacy})
+		}
+		for i := range s.config.Accounts {
+			if s.config.Accounts[i].ClientID == "" {
+				s.config.Accounts[i].ClientID = legacy
+			}
+		}
+		s.config.LegacyClientID = ""
+	}
 	for _, a := range s.config.Accounts {
 		if !accountIDPattern.MatchString(a.ID) {
 			return nil, errors.New("a configuração contém uma conta inválida")
@@ -72,7 +86,7 @@ func (s *Service) State() State {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return State{
-		Configured: s.config.ClientID != "", ClientID: s.config.ClientID,
+		Projects:        append([]Project{}, s.config.Projects...),
 		Accounts:        append([]Account{}, s.config.Accounts...),
 		ActiveAccountID: s.config.ActiveAccountID,
 	}
@@ -111,11 +125,16 @@ func (s *Service) saveLocked(next config) error {
 	return nil
 }
 
-func (s *Service) Configure(c Credentials) error {
+func projectKey(clientID string) string { return "oauth-client:" + clientID }
+
+// ImportProject acrescenta um projeto, ou atualiza o secret de um que já existe.
+// Cada empresa pode ter o seu; as contas de projetos diferentes convivem.
+func (s *Service) ImportProject(c Credentials) error {
 	s.authMu.Lock()
 	defer s.authMu.Unlock()
 	c.ClientID = strings.TrimSpace(c.ClientID)
 	c.ClientSecret = strings.TrimSpace(c.ClientSecret)
+	c.ProjectID = strings.TrimSpace(c.ProjectID)
 	if !strings.HasSuffix(c.ClientID, ".apps.googleusercontent.com") || strings.ContainsAny(c.ClientID, " \r\n\t") {
 		return errors.New("importe as credenciais de um cliente OAuth do tipo Aplicativo para computador")
 	}
@@ -124,15 +143,37 @@ func (s *Service) Configure(c Credentials) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(s.config.Accounts) > 0 && s.config.ClientID != c.ClientID {
-		return errors.New("remova as contas conectadas antes de trocar o projeto OAuth")
-	}
 	data, _ := json.Marshal(c)
-	if err := s.vault.Set("oauth-client", data); err != nil {
+	if err := s.vault.Set(projectKey(c.ClientID), data); err != nil {
 		return fmt.Errorf("guardar credenciais no chaveiro do sistema: %w", err)
 	}
 	next := s.config
-	next.ClientID = c.ClientID
+	next.Projects = slices.Clone(s.config.Projects)
+	project := Project{ClientID: c.ClientID, ProjectID: c.ProjectID}
+	if i := slices.IndexFunc(next.Projects, func(p Project) bool { return p.ClientID == c.ClientID }); i >= 0 {
+		next.Projects[i] = project
+	} else {
+		next.Projects = append(next.Projects, project)
+	}
+	return s.saveLocked(next)
+}
+
+func (s *Service) RemoveProject(clientID string) error {
+	s.authMu.Lock()
+	defer s.authMu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !slices.ContainsFunc(s.config.Projects, func(p Project) bool { return p.ClientID == clientID }) {
+		return errors.New("esse projeto não está importado")
+	}
+	if slices.ContainsFunc(s.config.Accounts, func(a Account) bool { return a.ClientID == clientID }) {
+		return errors.New("remova as contas deste projeto antes de remover o projeto")
+	}
+	if err := s.vault.Delete(projectKey(clientID)); err != nil {
+		return fmt.Errorf("remover credencial do chaveiro: %w", err)
+	}
+	next := s.config
+	next.Projects = slices.DeleteFunc(slices.Clone(s.config.Projects), func(p Project) bool { return p.ClientID == clientID })
 	return s.saveLocked(next)
 }
 
@@ -186,16 +227,49 @@ func (s *Service) RemoveAccount(id string) error {
 	return nil
 }
 
-func (s *Service) credentials() (Credentials, error) {
-	data, err := s.vault.Get("oauth-client")
+func (s *Service) credentials(clientID string) (Credentials, error) {
+	missing := errors.New("importe as credenciais OAuth do projeto nas configurações; confira se o chaveiro do sistema está desbloqueado")
+	data, err := s.vault.Get(projectKey(clientID))
+	if errors.Is(err, ErrNotFound) {
+		data, err = s.legacyCredentials(clientID)
+	}
 	if err != nil {
-		return Credentials{}, errors.New("importe as credenciais OAuth nas configurações; confira se o chaveiro do sistema está desbloqueado")
+		return Credentials{}, missing
 	}
 	var c Credentials
-	if json.Unmarshal(data, &c) != nil || c.ClientID == "" || c.ClientSecret == "" {
+	if json.Unmarshal(data, &c) != nil || c.ClientID != clientID || c.ClientSecret == "" {
 		return c, errors.New("as credenciais OAuth são inválidas; importe o arquivo novamente")
 	}
 	return c, nil
+}
+
+// legacyCredentials lê o secret do formato de um projeto só e o move para a
+// chave do projeto. Fica aqui, e não em Open, porque ler o chaveiro pode pedir
+// para desbloqueá-lo, e isso não deve acontecer antes de a janela abrir.
+func (s *Service) legacyCredentials(clientID string) ([]byte, error) {
+	data, err := s.vault.Get("oauth-client")
+	if err != nil {
+		return nil, err
+	}
+	var c Credentials
+	if json.Unmarshal(data, &c) != nil || c.ClientID != clientID {
+		return nil, ErrNotFound
+	}
+	if err := s.vault.Set(projectKey(clientID), data); err == nil {
+		_ = s.vault.Delete("oauth-client")
+	}
+	return data, nil
+}
+
+func (s *Service) accountClient(id string) (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, a := range s.config.Accounts {
+		if a.ID == id {
+			return a.ClientID, nil
+		}
+	}
+	return "", errors.New("essa conta não está conectada")
 }
 
 func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
@@ -218,7 +292,11 @@ func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
 		}
 		x.token = &oauth2.Token{RefreshToken: string(refresh)}
 	}
-	c, err := s.credentials()
+	clientID, err := s.accountClient(id)
+	if err != nil {
+		return "", err
+	}
+	c, err := s.credentials(clientID)
 	if err != nil {
 		return "", err
 	}

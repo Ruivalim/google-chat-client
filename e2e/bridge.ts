@@ -5,6 +5,8 @@ import type { Page } from "@playwright/test";
 
 export type Scenario = {
   configured?: boolean;
+  // projetos Google Cloud importados (padrão 1; configured: false zera)
+  projects?: number;
   accounts?: number;
   // atraso em ms por "Método" ou "Método:primeiro-argumento"
   delays?: Record<string, number>;
@@ -16,21 +18,27 @@ export type Call = { method: string; args: unknown[] };
 
 declare global {
   interface Window {
-    bridge: { calls: Call[]; failOnce: Record<string, string>; state: { activeAccountId: string } };
+    bridge: {
+      calls: Call[];
+      failOnce: Record<string, string>;
+      state: { activeAccountId: string; projects: { clientId: string }[]; accounts: { clientId: string }[] };
+    };
   }
 }
 
 function install(scenario: Scenario) {
+  const projects = [
+    { clientId: "123-abc.apps.googleusercontent.com", projectId: "chat-empresa-a" },
+    { clientId: "456-def.apps.googleusercontent.com", projectId: "" },
+  ].slice(0, scenario.configured === false ? 0 : (scenario.projects ?? 1));
+  // Com dois projetos, cada conta entra por um; com um, as duas pelo mesmo.
   const accounts = [
     { id: "111", name: "Ana Souza", email: "ana@empresa-a.com", domain: "empresa-a.com" },
     { id: "222", name: "Ana Souza", email: "ana@consultoria-b.com.br", domain: "consultoria-b.com.br" },
-  ].slice(0, scenario.accounts ?? 2);
-  let state = {
-    configured: scenario.configured ?? true,
-    clientId: scenario.configured === false ? "" : "123-abc.apps.googleusercontent.com",
-    accounts,
-    activeAccountId: accounts[0]?.id ?? "",
-  };
+  ]
+    .slice(0, projects.length ? (scenario.accounts ?? 2) : 0)
+    .map((a, i) => ({ ...a, clientId: projects[Math.min(i, projects.length - 1)].clientId }));
+  let state = { projects, accounts, activeAccountId: accounts[0]?.id ?? "" };
   const iso = (minutes: number) => new Date(Date.UTC(2026, 9, 19, 12, 0) - minutes * 60000).toISOString();
   const spaces = (account: string) => [
     {
@@ -90,6 +98,24 @@ function install(scenario: Scenario) {
           return state;
         case "SelectAccount":
           state = { ...state, activeAccountId: String(args[0]) };
+          bridge.state = state;
+          return state;
+        case "ConnectAccount": {
+          const added = {
+            id: "333",
+            name: "Nova Conta",
+            email: "nova@outra.com",
+            domain: "outra.com",
+            clientId: String(args[0]),
+          };
+          state = { ...state, accounts: [...state.accounts, added], activeAccountId: added.id };
+          bridge.state = state;
+          return state;
+        }
+        case "RemoveProject":
+          if (state.accounts.some((a) => a.clientId === args[0]))
+            throw new Error("remova as contas deste projeto antes");
+          state = { ...state, projects: state.projects.filter((p) => p.clientId !== args[0]) };
           bridge.state = state;
           return state;
         case "Spaces":

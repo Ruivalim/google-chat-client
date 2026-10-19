@@ -5,11 +5,20 @@ type Account struct {
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Domain string `json:"domain"`
+	// ClientID é o cliente OAuth do projeto pelo qual a conta entrou; a sessão
+	// só renova com as credenciais desse mesmo projeto.
+	ClientID string `json:"clientId"`
+}
+
+// Project é um cliente OAuth importado de um projeto Google Cloud. O secret
+// fica no chaveiro, sob projectKey(ClientID).
+type Project struct {
+	ClientID  string `json:"clientId"`
+	ProjectID string `json:"projectId"`
 }
 
 type State struct {
-	Configured      bool      `json:"configured"`
-	ClientID        string    `json:"clientId"`
+	Projects        []Project `json:"projects"`
 	Accounts        []Account `json:"accounts"`
 	ActiveAccountID string    `json:"activeAccountId"`
 }
@@ -61,14 +70,17 @@ type MessagePage struct {
 }
 
 type config struct {
-	ClientID        string    `json:"clientId"`
+	Projects        []Project `json:"projects"`
 	Accounts        []Account `json:"accounts"`
 	ActiveAccountID string    `json:"activeAccountId"`
+	// LegacyClientID é o formato antigo, de um projeto só. Open migra.
+	LegacyClientID string `json:"clientId,omitempty"`
 }
 
 type Credentials struct {
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
+	ProjectID    string `json:"project_id,omitempty"`
 }
 
 type Vault interface {

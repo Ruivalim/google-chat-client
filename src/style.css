@@ -630,24 +630,28 @@ a {
   margin-top: 12px;
   margin-bottom: 0;
 }
-.settings-account {
+.settings-account,
+.settings-project {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 16px 0;
 }
-.settings-account > div {
+.settings-account > div,
+.settings-project > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
   min-width: 0;
 }
-.settings-account strong {
+.settings-account strong,
+.settings-project strong {
   font-size: 0.8125rem;
   overflow-wrap: anywhere;
 }
-.settings-account span {
+.settings-account span,
+.settings-project span {
   font-size: 0.75rem;
   color: var(--muted);
   overflow-wrap: anywhere;
@@ -656,10 +660,7 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-.settings-section .configuration-state {
-  margin: 16px 0 8px;
-  color: var(--text);
+  margin-bottom: 16px;
 }
 .client-id {
   display: block;
@@ -667,6 +668,9 @@ a {
   font-size: 0.75rem;
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+.settings-project .client-id {
+  margin: 0;
 }
 .appearance-setting {
   display: flex;
@@ -759,7 +763,8 @@ a {
     padding: 10px 8px;
     gap: 8px;
   }
-  .settings-account {
+  .settings-account,
+  .settings-project {
     flex-wrap: wrap;
   }
   .settings-dialog {

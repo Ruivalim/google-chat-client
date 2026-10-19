@@ -37,12 +37,20 @@ func oauthConfig(c Credentials, redirect string) *oauth2.Config {
 	}
 }
 
-func (s *Service) AddAccount(parent context.Context, openBrowser func(string) error) (Account, error) {
+// AddAccount conecta uma conta pelo projeto clientID. Uma conta que já estava
+// conectada por outro projeto passa a usar este.
+func (s *Service) AddAccount(parent context.Context, clientID string, openBrowser func(string) error) (Account, error) {
 	if !s.authMu.TryLock() {
 		return Account{}, errors.New("já existe um login em andamento; conclua ou cancele antes de iniciar outro")
 	}
 	defer s.authMu.Unlock()
-	c, err := s.credentials()
+	s.mu.RLock()
+	imported := slices.ContainsFunc(s.config.Projects, func(p Project) bool { return p.ClientID == clientID })
+	s.mu.RUnlock()
+	if !imported {
+		return Account{}, errors.New("escolha um projeto importado para conectar a conta")
+	}
+	c, err := s.credentials(clientID)
 	if err != nil {
 		return Account{}, err
 	}
@@ -136,7 +144,7 @@ func (s *Service) AddAccount(parent context.Context, openBrowser func(string) er
 	if r.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&user) != nil || !user.Verified || !accountIDPattern.MatchString(user.Sub) || user.Email == "" {
 		return Account{}, errors.New("o Google não retornou uma identidade de conta válida")
 	}
-	account := Account{ID: user.Sub, Name: user.Name, Email: user.Email, Domain: user.Domain}
+	account := Account{ID: user.Sub, Name: user.Name, Email: user.Email, Domain: user.Domain, ClientID: clientID}
 	if err := s.attachAccount(account, token); err != nil {
 		return Account{}, err
 	}

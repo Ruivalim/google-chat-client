@@ -91,7 +91,11 @@ func TestRemoveAndReconnectAccountReplacesSession(t *testing.T) {
 		return jsonResponse(http.StatusOK, `{}`), nil
 	}))
 	s.path = t.TempDir() + "/accounts.json"
-	s.config = config{ClientID: "client.apps.googleusercontent.com", Accounts: []Account{{ID: "acct-a", Email: "a@example.com"}}, ActiveAccountID: "acct-a"}
+	s.config = config{
+		Projects:        []Project{{ClientID: "client.apps.googleusercontent.com"}},
+		Accounts:        []Account{{ID: "acct-a", Email: "a@example.com", ClientID: "client.apps.googleusercontent.com"}},
+		ActiveAccountID: "acct-a",
+	}
 	s.sessions["acct-a"] = &session{token: &oauth2.Token{AccessToken: "old-token", RefreshToken: "old-refresh", Expiry: time.Now().Add(time.Hour)}}
 
 	if err := s.RemoveAccount("acct-a"); err != nil {

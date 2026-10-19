@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -25,6 +26,14 @@ type googleStub struct {
 	refresh   string
 	userinfo  string
 	tokenHits atomic.Int32
+	mu        sync.Mutex
+	clients   []string // client_id de cada pedido de token, na ordem
+}
+
+func (g *googleStub) clientIDs() []string {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return slices.Clone(g.clients)
 }
 
 func (g *googleStub) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -33,6 +42,9 @@ func (g *googleStub) RoundTrip(r *http.Request) (*http.Response, error) {
 		g.tokenHits.Add(1)
 		body, _ := io.ReadAll(r.Body)
 		form, _ := url.ParseQuery(string(body))
+		g.mu.Lock()
+		g.clients = append(g.clients, form.Get("client_id"))
+		g.mu.Unlock()
 		if form.Get("grant_type") == "authorization_code" && (form.Get("code") != "good-code" || form.Get("code_verifier") == "") {
 			return jsonResponse(http.StatusBadRequest, `{"error":"invalid_grant"}`), nil
 		}
@@ -60,10 +72,16 @@ func configuredService(t *testing.T, g *googleStub) (*Service, *memoryVault) {
 	vault := &memoryVault{values: map[string][]byte{}}
 	s := testService(vault, g)
 	s.path = t.TempDir() + "/accounts.json"
-	if err := s.Configure(Credentials{ClientID: testClientID, ClientSecret: "segredo"}); err != nil {
-		t.Fatalf("Configure: %v", err)
+	if err := s.ImportProject(Credentials{ClientID: testClientID, ClientSecret: "segredo", ProjectID: "chat-teste"}); err != nil {
+		t.Fatalf("ImportProject: %v", err)
 	}
 	return s, vault
+}
+
+// connect registra uma conta já conectada pelo projeto clientID.
+func connect(s *Service, id, clientID string, x *session) {
+	s.config.Accounts = append(s.config.Accounts, Account{ID: id, Email: id + "@example.com", ClientID: clientID})
+	s.sessions[id] = x
 }
 
 // browser simula o navegador do sistema: lê a URL de consentimento e chama o callback local.
@@ -99,7 +117,7 @@ func TestAddAccountStoresSessionInVaultNotInConfig(t *testing.T) {
 	g := &googleStub{scope: allScopes(), refresh: "refresh-1", userinfo: `{"sub":"1001","name":"Ana","email":"ana@empresa.com","email_verified":true,"hd":"empresa.com"}`}
 	s, vault := configuredService(t, g)
 
-	account, err := s.AddAccount(context.Background(), browser(t, func(state string) url.Values {
+	account, err := s.AddAccount(context.Background(), testClientID, browser(t, func(state string) url.Values {
 		return url.Values{"state": {state}, "code": {"good-code"}}
 	}, nil))
 	if err != nil {
@@ -128,7 +146,7 @@ func TestAddAccountStoresSessionInVaultNotInConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	if st := reopened.State(); st.ActiveAccountID != "1001" || st.ClientID != testClientID {
+	if st := reopened.State(); st.ActiveAccountID != "1001" || st.Projects[0].ProjectID != "chat-teste" || st.Accounts[0].ClientID != testClientID {
 		t.Fatalf("reaberto = %+v", st)
 	}
 }
@@ -139,7 +157,7 @@ func TestAddAccountIgnoresCallbackWithWrongState(t *testing.T) {
 	status := make(chan int, 1)
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	_, err := s.AddAccount(ctx, browser(t, func(string) url.Values {
+	_, err := s.AddAccount(ctx, testClientID, browser(t, func(string) url.Values {
 		return url.Values{"state": {"forjado"}, "code": {"good-code"}}
 	}, status))
 	if err == nil {
@@ -188,7 +206,7 @@ func TestAddAccountFailures(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			s, vault := configuredService(t, c.g)
-			_, err := s.AddAccount(context.Background(), browser(t, c.query, nil))
+			_, err := s.AddAccount(context.Background(), testClientID, browser(t, c.query, nil))
 			if err == nil || !strings.Contains(err.Error(), c.contains) {
 				t.Fatalf("err = %v, want contendo %q", err, c.contains)
 			}
@@ -210,11 +228,11 @@ func TestAddAccountRejectsSecondLoginWhileFirstRuns(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, err := s.AddAccount(ctx, func(string) error { close(opened); return nil })
+		_, err := s.AddAccount(ctx, testClientID, func(string) error { close(opened); return nil })
 		done <- err
 	}()
 	<-opened
-	if _, err := s.AddAccount(context.Background(), func(string) error { return nil }); err == nil {
+	if _, err := s.AddAccount(context.Background(), testClientID, func(string) error { return nil }); err == nil {
 		t.Fatal("segundo login aceito em paralelo")
 	}
 	cancel()
@@ -227,7 +245,7 @@ func TestAccessTokenRefreshesOnceUnderConcurrency(t *testing.T) {
 	g := &googleStub{scope: allScopes()}
 	s, vault := configuredService(t, g)
 	vault.values["refresh:acct-a"] = []byte("stored-refresh")
-	s.sessions["acct-a"] = &session{}
+	connect(s, "acct-a", testClientID, &session{})
 
 	var wg sync.WaitGroup
 	tokens := make([]string, 20)
@@ -250,7 +268,7 @@ func TestAccessTokenKeepsRotatedRefreshToken(t *testing.T) {
 	g := &googleStub{scope: allScopes(), refresh: "rotated"}
 	s, vault := configuredService(t, g)
 	vault.values["refresh:acct-a"] = []byte("old")
-	s.sessions["acct-a"] = &session{token: &oauth2.Token{AccessToken: "expired", RefreshToken: "old", Expiry: time.Now().Add(-time.Minute)}}
+	connect(s, "acct-a", testClientID, &session{token: &oauth2.Token{AccessToken: "expired", RefreshToken: "old", Expiry: time.Now().Add(-time.Minute)}})
 	if _, err := s.accessToken(context.Background(), "acct-a"); err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +279,7 @@ func TestAccessTokenKeepsRotatedRefreshToken(t *testing.T) {
 
 func TestAccessTokenWithoutStoredSessionAsksToReconnect(t *testing.T) {
 	s, _ := configuredService(t, &googleStub{})
-	s.sessions["acct-a"] = &session{}
+	connect(s, "acct-a", testClientID, &session{})
 	if _, err := s.accessToken(context.Background(), "acct-a"); err == nil || !strings.Contains(err.Error(), "conecte") {
 		t.Fatalf("err = %v", err)
 	}
@@ -270,30 +288,40 @@ func TestAccessTokenWithoutStoredSessionAsksToReconnect(t *testing.T) {
 	}
 }
 
-func TestConfigureValidation(t *testing.T) {
-	s, _ := configuredService(t, &googleStub{})
+func TestImportProjectValidation(t *testing.T) {
+	s, vault := configuredService(t, &googleStub{})
 	for _, c := range []Credentials{
 		{ClientID: "qualquer-coisa", ClientSecret: "s"},
 		{ClientID: "a b.apps.googleusercontent.com", ClientSecret: "s"},
 		{ClientID: testClientID, ClientSecret: "  "},
 	} {
-		if err := s.Configure(c); err == nil {
-			t.Errorf("Configure(%+v) aceito", c)
+		if err := s.ImportProject(c); err == nil {
+			t.Errorf("ImportProject(%+v) aceito", c)
 		}
 	}
-	s.config.Accounts = []Account{{ID: "1", Email: "a@b.c"}}
-	if err := s.Configure(Credentials{ClientID: "outro.apps.googleusercontent.com", ClientSecret: "s"}); err == nil {
-		t.Fatal("trocou de projeto OAuth com conta conectada")
+	connect(s, "1", testClientID, &session{})
+	if err := s.ImportProject(Credentials{ClientID: "outro.apps.googleusercontent.com", ClientSecret: "s"}); err != nil {
+		t.Fatalf("segundo projeto com conta conectada no primeiro: %v", err)
 	}
-	if err := s.Configure(Credentials{ClientID: " " + testClientID + "\n", ClientSecret: "novo"}); err != nil {
+	if err := s.ImportProject(Credentials{ClientID: " " + testClientID + "\n", ClientSecret: "novo", ProjectID: "renomeado"}); err != nil {
 		t.Fatalf("reimportar o mesmo projeto: %v", err)
+	}
+	st := s.State()
+	if len(st.Projects) != 2 || st.Projects[0].ProjectID != "renomeado" {
+		t.Fatalf("projetos = %+v", st.Projects)
+	}
+	if c, _ := s.credentials(testClientID); c.ClientSecret != "novo" {
+		t.Fatalf("secret depois de reimportar = %q", c.ClientSecret)
+	}
+	if _, ok := vault.values[projectKey("outro.apps.googleusercontent.com")]; !ok {
+		t.Fatal("segundo projeto não foi para o chaveiro")
 	}
 }
 
 func TestOpenRejectsBrokenConfig(t *testing.T) {
 	dir := t.TempDir()
 	vault := &memoryVault{values: map[string][]byte{}}
-	if s, err := Open(dir+"/nao-existe.json", vault); err != nil || s.State().Configured {
+	if s, err := Open(dir+"/nao-existe.json", vault); err != nil || len(s.State().Projects) != 0 {
 		t.Fatalf("config ausente: %v", err)
 	}
 	for name, body := range map[string]string{
@@ -328,9 +356,9 @@ func TestAccessTokenTellsExpiredSessionApartFromNetwork(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			vault := &memoryVault{values: map[string][]byte{"refresh:acct-a": []byte("r")}}
 			data, _ := json.Marshal(Credentials{ClientID: testClientID, ClientSecret: "s"})
-			vault.values["oauth-client"] = data
+			vault.values[projectKey(testClientID)] = data
 			s := testService(vault, c.rt)
-			s.sessions["acct-a"] = &session{}
+			connect(s, "acct-a", testClientID, &session{})
 			_, err := s.accessToken(context.Background(), "acct-a")
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("err = %v, want contendo %q", err, c.want)

@@ -35,11 +35,10 @@ import {
 } from "@fluentui/react-icons";
 import { isMyGo } from "mygo-runtime";
 import { type ReactElement, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type Account, Desktop, type Message, type Space, type State } from "./mygo";
+import { type Account, Desktop, type Message, type Project, type Space, type State } from "./mygo";
 
 const emptyState: State = {
-  configured: false,
-  clientId: "",
+  projects: [],
   accounts: [],
   activeAccountId: "",
 };
@@ -70,6 +69,12 @@ function AccountAvatar({ account, size }: { account: Account; size?: 36 }) {
       size={size}
     />
   );
+}
+
+// O project_id vem no JSON do Google Cloud; sem ele, o número do projeto, que
+// abre o client ID.
+function projectLabel(project: Project) {
+  return project.projectId || `Projeto ${project.clientId.split("-")[0]}`;
 }
 
 function senderName(m: Message, account: Account) {
@@ -167,15 +172,18 @@ export function App() {
     localStorage.setItem("appearance", appearance);
   }, [appearance, dark]);
 
-  async function connect() {
-    if (!state.configured) {
+  // Sem projeto escolhido e com mais de um importado, quem decide é a pessoa,
+  // na lista de projetos das configurações.
+  async function connect(clientId?: string) {
+    const target = clientId ?? (state.projects.length === 1 ? state.projects[0].clientId : "");
+    if (!target) {
       setSettings(true);
       return;
     }
     setError("");
     setConnecting(true);
     try {
-      const next = await Desktop.connectAccount();
+      const next = await Desktop.connectAccount(target);
       selection.current++;
       setState(next);
       setSettings(false);
@@ -234,6 +242,23 @@ export function App() {
       setRemoving("");
     }
   }
+
+  async function removeProject(clientId: string) {
+    setRemoving(clientId);
+    setError("");
+    try {
+      setState(await Desktop.removeProject(clientId));
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setRemoving("");
+    }
+  }
+
+  const configured = state.projects.length > 0;
+  const manyProjects = state.projects.length > 1;
+  const accountsOf = (clientId: string) => state.accounts.filter((a) => a.clientId === clientId).length;
+  const projectOf = (a: Account) => state.projects.find((p) => p.clientId === a.clientId);
 
   // A className do FluentProvider vai também para o contêiner dos portais (tooltip,
   // diálogo). Com a classe de layout ali, esse contêiner cobria a tela e o tooltip piscava.
@@ -325,7 +350,7 @@ export function App() {
                   </div>
                 )}
                 <div className="welcome-action">
-                  {state.configured ? (
+                  {configured ? (
                     <Button
                       appearance="primary"
                       size="large"
@@ -351,9 +376,11 @@ export function App() {
                   </Button>
                 </div>
                 <p className="welcome-detail">
-                  {state.configured
-                    ? "Projeto configurado. O login abre no seu navegador."
-                    : "Primeiro, importe o arquivo OAuth do seu projeto Google Cloud."}
+                  {!configured
+                    ? "Primeiro, importe o arquivo OAuth do seu projeto Google Cloud."
+                    : manyProjects
+                      ? `${state.projects.length} projetos importados. Nas configurações você escolhe por qual a conta entra.`
+                      : "Projeto configurado. O login abre no seu navegador."}
                 </p>
               </div>
               <div className="welcome-footer">
@@ -385,7 +412,11 @@ export function App() {
                       <AccountAvatar account={a} />
                       <div>
                         <strong>{a.name || a.email}</strong>
-                        <span>{a.email}</span>
+                        <span>
+                          {a.email}
+                          {manyProjects &&
+                            ` · ${projectOf(a) ? projectLabel(projectOf(a) as Project) : "projeto removido"}`}
+                        </span>
                       </div>
                       <Button disabled={removing !== "" || connecting} onClick={() => void remove(a.id)}>
                         {removing === a.id ? "Removendo…" : "Remover"}
@@ -397,29 +428,65 @@ export function App() {
                       <Spinner size="tiny" label="Conclua o login no navegador" />
                       <Button onClick={() => void Desktop.cancelLogin()}>Cancelar</Button>
                     </div>
+                  ) : !configured ? (
+                    <p className="settings-hint">
+                      Importe o arquivo JSON de um projeto, logo abaixo, para liberar o login.
+                    </p>
+                  ) : manyProjects ? (
+                    <p className="settings-hint">Para adicionar uma conta, escolha o projeto dela na lista abaixo.</p>
                   ) : (
-                    <Button
-                      icon={<Add24Regular />}
-                      disabled={!native || !state.configured || importing}
-                      onClick={() => void connect()}
-                    >
+                    <Button icon={<Add24Regular />} disabled={!native || importing} onClick={() => void connect()}>
                       Adicionar conta Google
                     </Button>
                   )}
                 </section>
                 <section className="settings-section">
-                  <h2>Projeto Google Cloud</h2>
+                  <h2>Projetos Google Cloud</h2>
                   <p>
                     Habilite a Google Chat API e crie um cliente OAuth do tipo{" "}
-                    <strong>Aplicativo para computador</strong>. Baixe o JSON e importe aqui.
+                    <strong>Aplicativo para computador</strong>. Baixe o JSON e importe aqui. Dá para importar mais de
+                    um: cada conta entra pelo projeto que você escolher.
                   </p>
+                  {state.projects.map((p) => {
+                    const count = accountsOf(p.clientId);
+                    return (
+                      <div className="settings-project" key={p.clientId}>
+                        <div>
+                          <strong>{projectLabel(p)}</strong>
+                          <code className="client-id">{p.clientId}</code>
+                          <span>{count === 0 ? "Nenhuma conta" : count === 1 ? "1 conta" : `${count} contas`}</span>
+                        </div>
+                        {manyProjects && (
+                          <Button
+                            icon={<Add24Regular />}
+                            disabled={!native || connecting || importing}
+                            onClick={() => void connect(p.clientId)}
+                          >
+                            Adicionar conta
+                          </Button>
+                        )}
+                        <Tooltip
+                          content={count > 0 ? "Remova as contas deste projeto primeiro" : "Remover este projeto"}
+                          relationship="description"
+                        >
+                          <Button
+                            disabledFocusable={count > 0}
+                            disabled={removing !== "" || connecting}
+                            onClick={() => void removeProject(p.clientId)}
+                          >
+                            {removing === p.clientId ? "Removendo…" : "Remover"}
+                          </Button>
+                        </Tooltip>
+                      </div>
+                    );
+                  })}
                   <div className="settings-actions">
                     <Button
                       icon={<ArrowUpload24Regular />}
                       disabled={!native || importing || connecting}
                       onClick={() => void importCredentials()}
                     >
-                      {importing ? "Importando…" : "Importar arquivo JSON"}
+                      {importing ? "Importando…" : configured ? "Importar outro JSON" : "Importar arquivo JSON"}
                     </Button>
                     <Button
                       appearance="subtle"
@@ -429,14 +496,10 @@ export function App() {
                       Abrir Google Cloud
                     </Button>
                   </div>
-                  <p className="configuration-state">
-                    {state.configured ? "Projeto configurado" : "Nenhum projeto configurado"}
-                  </p>
-                  {state.clientId && <code className="client-id">{state.clientId}</code>}
                   <p>
-                    Para contas de mais de uma organização, o público do projeto precisa ser <strong>Externo</strong>,
-                    com cada conta como usuária de teste. Nesse modo o Google encerra a sessão a cada 7 dias e a conta
-                    precisa ser adicionada de novo.
+                    Um projeto com público <strong>Externo</strong> aceita contas de várias organizações, cada uma
+                    cadastrada como usuária de teste. Nesse modo o Google encerra a sessão a cada 7 dias. Na empresa em
+                    que você é admin, um projeto próprio com público <strong>Interno</strong> não tem esse limite.
                   </p>
                   <p>
                     O login pode depender da liberação do aplicativo pelo administrador do Workspace. As credenciais
