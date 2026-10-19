@@ -12,6 +12,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "mygo-cli": "0.5.5",
@@ -25,7 +27,8 @@
     "build": "mygo build",
     "build:all": "mygo build -platform linux/amd64,windows/amd64,darwin/universal",
     "build:web": "tsc --noEmit && vite build",
-    "lint": "tsc --noEmit && biome check .",
+    "lint": "tsc --noEmit && tsc --noEmit -p e2e && biome check .",
+    "test:ui": "playwright test",
     "fmt": "biome check --write ."
   }
 }

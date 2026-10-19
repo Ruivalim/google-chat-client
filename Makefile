@@ -30,10 +30,11 @@ help: ## Lista os alvos disponíveis
 	  END { printf "\n" }' $(MAKEFILE_LIST)
 
 .PHONY: setup
-setup: ## Instala as dependências Go e da interface
+setup: ## Instala as dependências Go, da interface e o Chromium dos testes
 	@echo "$(GREEN)▸ setup$(RESET)"
 	npm ci
 	go mod download
+	npx playwright install chromium --only-shell
 
 ##@ Desenvolvimento
 
@@ -68,9 +69,10 @@ lint: generate ## Verifica formatação, tipos e lint de Go e TypeScript
 	go vet ./...
 
 .PHONY: test
-test: ## Executa testes locais de contas e integração HTTP simulada
+test: generate ## Testa o backend (Google simulado) e a interface (ponte simulada)
 	@echo "$(GREEN)▸ test$(RESET)"
-	go test ./...
+	go test -race ./...
+	npm run test:ui
 
 .PHONY: check
 check: lint test build ## Executa as mesmas verificações usadas no CI

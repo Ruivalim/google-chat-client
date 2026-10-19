@@ -115,6 +115,8 @@ function Notice({ children }: { children: ReactNode }) {
 
 export function App() {
   const [state, setState] = useState<State>(emptyState);
+  const selection = useRef(0);
+  const selectQueue = useRef<Promise<unknown>>(Promise.resolve());
   const [starting, setStarting] = useState(native);
   const [error, setError] = useState("");
   const [settings, setSettings] = useState(false);
@@ -173,7 +175,9 @@ export function App() {
     setError("");
     setConnecting(true);
     try {
-      setState(await Desktop.connectAccount());
+      const next = await Desktop.connectAccount();
+      selection.current++;
+      setState(next);
       setSettings(false);
     } catch (err) {
       setError(describe(err));
@@ -194,12 +198,24 @@ export function App() {
     }
   }
 
+  // Cliques seguidos na faixa de contas: a tela troca na hora, as chamadas ao Go
+  // saem em fila para a conta gravada ser a do último clique, e só a resposta
+  // desse último clique atualiza o estado.
   async function select(id: string) {
+    const turn = ++selection.current;
     setError("");
+    setState((current) => ({ ...current, activeAccountId: id }));
+    const request = selectQueue.current.then(() => Desktop.selectAccount(id));
+    selectQueue.current = request.catch(() => undefined);
     try {
-      setState(await Desktop.selectAccount(id));
+      const next = await request;
+      if (turn === selection.current) setState(next);
     } catch (err) {
+      if (turn !== selection.current) return;
       setError(describe(err));
+      Desktop.state()
+        .then((next) => turn === selection.current && setState(next))
+        .catch(() => undefined);
     }
   }
 
@@ -207,7 +223,9 @@ export function App() {
     setRemoving(id);
     setError("");
     try {
-      setState(await Desktop.removeAccount(id));
+      const next = await Desktop.removeAccount(id);
+      selection.current++;
+      setState(next);
       selectedSpaces.delete(id);
       for (const key of drafts.keys()) if (key.startsWith(`${id}|`)) drafts.delete(key);
     } catch (err) {

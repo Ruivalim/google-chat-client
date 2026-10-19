@@ -10,3 +10,5 @@ src/mygo.ts
 coverage/
 client_secret*.json
 credentials*.json
+test-results/
+playwright-report/

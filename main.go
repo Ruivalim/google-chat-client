@@ -9,7 +9,9 @@ import (
 )
 
 func main() {
-	mygo.App.SetName("Google Chat Client")
+	// Sem SetName: o nome vem do pacote, e o `mygo dev` chama o app de
+	// "Google Chat Client Dev". Assim dev e app instalado têm accounts.json
+	// separados, cada um casado com o seu serviço no chaveiro.
 	desktop := &Desktop{}
 	mygo.Bind(desktop)
 	mygo.App.WhenReady(func() {

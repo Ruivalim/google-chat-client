@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["src/**", "index.html", "*.ts", "*.json", "!src/mygo.ts", "!package-lock.json"]
+    "includes": ["src/**", "e2e/**", "index.html", "*.ts", "*.json", "!src/mygo.ts", "!package-lock.json"]
   },
   "formatter": {
     "indentStyle": "space",
