@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -161,7 +162,13 @@ func TestAddAccountFailures(t *testing.T) {
 	}{
 		{"usuário negou", &googleStub{scope: allScopes()}, func(st string) url.Values {
 			return url.Values{"state": {st}, "error": {"access_denied"}}
-		}, "não autorizou"},
+		}, "não foi autorizado"},
+		{"admin bloqueou", &googleStub{scope: allScopes()}, func(st string) url.Values {
+			return url.Values{"state": {st}, "error": {"admin_policy_enforced"}}
+		}, "administrador"},
+		{"projeto interno", &googleStub{scope: allScopes()}, func(st string) url.Values {
+			return url.Values{"state": {st}, "error": {"org_internal"}}
+		}, "Externo"},
 		{"escopo de chat faltando", &googleStub{scope: "openid email profile", refresh: "r"}, func(st string) url.Values {
 			return url.Values{"state": {st}, "code": {"good-code"}}
 		}, "permissão de Chat"},
@@ -300,5 +307,34 @@ func TestOpenRejectsBrokenConfig(t *testing.T) {
 		if _, err := Open(path, vault); err == nil {
 			t.Errorf("%s: Open aceitou", name)
 		}
+	}
+}
+
+func TestAccessTokenTellsExpiredSessionApartFromNetwork(t *testing.T) {
+	cases := map[string]struct {
+		rt   roundTripFunc
+		want string
+	}{
+		"sessão vencida": {func(*http.Request) (*http.Response, error) {
+			resp := jsonResponse(http.StatusBadRequest, `{"error":"invalid_grant","error_description":"Token has been expired or revoked."}`)
+			resp.Header.Set("Content-Type", "application/json")
+			return resp, nil
+		}, "expirou"},
+		"sem rede": {func(*http.Request) (*http.Response, error) {
+			return nil, errors.New("dial tcp: no route to host")
+		}, "confira a conexão"},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			vault := &memoryVault{values: map[string][]byte{"refresh:acct-a": []byte("r")}}
+			data, _ := json.Marshal(Credentials{ClientID: testClientID, ClientSecret: "s"})
+			vault.values["oauth-client"] = data
+			s := testService(vault, c.rt)
+			s.sessions["acct-a"] = &session{}
+			_, err := s.accessToken(context.Background(), "acct-a")
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("err = %v, want contendo %q", err, c.want)
+			}
+		})
 	}
 }

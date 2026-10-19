@@ -71,18 +71,28 @@ func (s *Service) AddAccount(parent context.Context, openBrowser func(string) er
 			return
 		}
 		value := callback{code: r.URL.Query().Get("code")}
-		if r.URL.Query().Get("error") != "" || value.code == "" {
-			value.err = errors.New("o Google não autorizou o acesso; confira o consentimento e as políticas do Workspace")
+		if code := r.URL.Query().Get("error"); code != "" || value.code == "" {
+			value.err = consentError(code)
 		}
 		select {
 		case result <- value:
-			fmt.Fprint(w, "Pode voltar ao Google Chat Client. O aplicativo está concluindo a conexão da conta.")
+			if value.err != nil {
+				fmt.Fprint(w, "O login não foi concluído. Volte ao Google Chat Client para ver o motivo.")
+			} else {
+				fmt.Fprint(w, "Pode voltar ao Google Chat Client. O aplicativo está concluindo a conexão da conta.")
+			}
 		default:
 			http.Error(w, "Este retorno já foi recebido.", http.StatusGone)
 		}
 	})
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, MaxHeaderBytes: 8192}
-	defer server.Close()
+	// Shutdown, e não Close: no caminho de erro o login retorna logo depois de
+	// receber o callback, e Close cortaria a resposta que o navegador espera.
+	defer func() {
+		done, stop := context.WithTimeout(context.Background(), 2*time.Second)
+		defer stop()
+		_ = server.Shutdown(done)
+	}()
 	go func() { _ = server.Serve(listener) }()
 	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("prompt", "consent select_account"))
 	if err := openBrowser(url); err != nil {
@@ -165,6 +175,21 @@ func (s *Service) attachAccount(a Account, token *oauth2.Token) error {
 	x.token, x.removed = token, false
 	s.sessions[a.ID] = x
 	return nil
+}
+
+// consentError traduz o parâmetro error do retorno do Google. Os dois casos de
+// política aparecem para quem usa conta de outra empresa, e a correção não está
+// no app: é o admin daquele Workspace que libera.
+func consentError(code string) error {
+	switch code {
+	case "access_denied":
+		return errors.New("o acesso não foi autorizado; conecte de novo e aceite as permissões pedidas")
+	case "admin_policy_enforced":
+		return errors.New("o administrador do Workspace desta conta bloqueou o app; peça para marcar o client ID como confiável em Segurança > Acesso e controle de dados > Controles de API")
+	case "org_internal":
+		return errors.New("o projeto OAuth aceita só contas da própria organização; mude o público para Externo no Google Cloud")
+	}
+	return errors.New("o Google não autorizou o acesso; confira o consentimento e as políticas do Workspace")
 }
 
 func requestID() string {

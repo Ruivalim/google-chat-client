@@ -12,3 +12,7 @@ client_secret*.json
 credentials*.json
 test-results/
 playwright-report/
+
+# índice local do graft, regenerável com `graft build`
+/graft/
+/.ignore

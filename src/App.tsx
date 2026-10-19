@@ -431,6 +431,11 @@ export function App() {
                 </p>
                 {state.clientId && <code className="client-id">{state.clientId}</code>}
                 <p>
+                  Para contas de mais de uma organização, o público do projeto precisa ser <strong>Externo</strong>, com
+                  cada conta como usuária de teste. Nesse modo o Google encerra a sessão a cada 7 dias e a conta precisa
+                  ser adicionada de novo.
+                </p>
+                <p>
                   O login pode depender da liberação do aplicativo pelo administrador do Workspace. As credenciais ficam
                   no chaveiro do sistema.
                 </p>

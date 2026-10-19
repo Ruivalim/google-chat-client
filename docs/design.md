@@ -10,7 +10,7 @@ Leitura: cliente de chat para uso diário no trabalho, com linguagem visual do F
 - O verde escuro identifica seleção e envio; textos e superfícies usam neutros para facilitar a leitura de históricos longos.
 - Fontes do sistema preservam legibilidade e aparência familiar nas três plataformas, sem downloads de fontes.
 - Mensagens usam linhas com autor e horário, evitando transformar cada mensagem em um cartão.
-- Avatares são iniciais de dados reais das contas; não há fotos ou pessoas fictícias.
+- Na faixa, cada conta mostra as iniciais e a cor do domínio, porque a mesma pessoa costuma ter conta em mais de uma empresa e o nome não distingue. Conta pessoal, sem domínio, usa as iniciais do nome. Não há fotos.
 - A interface segue inicialmente o tema do sistema e oferece alternância entre claro e escuro.
 - Movimento fica restrito ao feedback de controles e indicadores de trabalho em andamento.
 - Controles de Calendar, Meet e Gmail serão acrescentados quando houver suas respectivas funções.

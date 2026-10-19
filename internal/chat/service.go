@@ -225,6 +225,12 @@ func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, s.http)
 	token, err := oauthConfig(c, "").TokenSource(ctx, x.token).Token()
 	if err != nil {
+		// invalid_grant é sessão revogada ou vencida, por exemplo os 7 dias de um
+		// projeto em modo de teste. Tentar de novo não resolve.
+		var refused *oauth2.RetrieveError
+		if errors.As(err, &refused) && refused.ErrorCode == "invalid_grant" {
+			return "", errors.New("a sessão desta conta expirou ou foi revogada; conecte a conta de novo")
+		}
 		return "", errors.New("não foi possível renovar a sessão; confira a conexão e, se persistir, conecte essa conta novamente")
 	}
 	if token.RefreshToken != "" && token.RefreshToken != x.token.RefreshToken {
