@@ -235,232 +235,236 @@ export function App() {
     }
   }
 
+  // A className do FluentProvider vai também para o contêiner dos portais (tooltip,
+  // diálogo). Com a classe de layout ali, esse contêiner cobria a tela e o tooltip piscava.
   return (
-    <FluentProvider theme={theme} className="app">
-      <a href="#main-content" className="skip-link">
-        Ir para a conversa
-      </a>
-      <nav className="account-rail" aria-label="Contas Google">
-        <div className="rail-heading" title="Google Chat Client">
-          <ChatMultiple24Regular />
-        </div>
-        <div className="account-buttons">
-          {state.accounts.map((a) => (
-            <Tooltip key={a.id} content={`${a.name || a.email} · ${a.email}`} relationship="label">
-              <button
-                type="button"
-                className={`account-button ${account?.id === a.id ? "selected" : ""}`}
-                aria-pressed={account?.id === a.id}
-                aria-label={`Usar ${a.email}`}
-                onClick={() => void select(a.id)}
-              >
-                <AccountAvatar account={a} size={36} />
-              </button>
-            </Tooltip>
-          ))}
-        </div>
-        <IconButton
-          label="Adicionar conta Google"
-          appearance="subtle"
-          disabled={!native || connecting}
-          onClick={() => void connect()}
-        >
-          <Add24Regular />
-        </IconButton>
-        <div className="rail-bottom">
+    <FluentProvider theme={theme}>
+      <div className="app">
+        <a href="#main-content" className="skip-link">
+          Ir para a conversa
+        </a>
+        <nav className="account-rail" aria-label="Contas Google">
+          <div className="rail-heading" title="Google Chat Client">
+            <ChatMultiple24Regular />
+          </div>
+          <div className="account-buttons">
+            {state.accounts.map((a) => (
+              <Tooltip key={a.id} content={`${a.name || a.email} · ${a.email}`} relationship="label">
+                <button
+                  type="button"
+                  className={`account-button ${account?.id === a.id ? "selected" : ""}`}
+                  aria-pressed={account?.id === a.id}
+                  aria-label={`Usar ${a.email}`}
+                  onClick={() => void select(a.id)}
+                >
+                  <AccountAvatar account={a} size={36} />
+                </button>
+              </Tooltip>
+            ))}
+          </div>
           <IconButton
-            label={dark ? "Usar tema claro" : "Usar tema escuro"}
+            label="Adicionar conta Google"
             appearance="subtle"
-            onClick={() => setAppearance(dark ? "light" : "dark")}
+            disabled={!native || connecting}
+            onClick={() => void connect()}
           >
-            {dark ? <WeatherSunny24Regular /> : <WeatherMoon24Regular />}
+            <Add24Regular />
           </IconButton>
-          <IconButton label="Configurações e contas" appearance="subtle" onClick={() => setSettings(true)}>
-            <Settings24Regular />
-          </IconButton>
-        </div>
-      </nav>
-      <main id="main-content" className="main" tabIndex={-1}>
-        {error && !settings && (
-          <div className="global-notice">
-            <Notice>{error}</Notice>
-          </div>
-        )}
-        {connecting && !settings && (
-          <div className="connection-status" role="status">
-            <Spinner size="tiny" /> Conclua o login no navegador{" "}
-            <Button size="small" onClick={() => void Desktop.cancelLogin()}>
-              Cancelar
-            </Button>
-          </div>
-        )}
-        {starting ? (
-          <div className="center-state">
-            <Spinner label="Carregando suas contas" />
-          </div>
-        ) : account ? (
-          <Workspace key={account.id} account={account} onSettings={() => setSettings(true)} />
-        ) : (
-          <div className="welcome">
-            <div className="welcome-heading">
-              <ChatMultiple24Regular />
-              <span>Google Chat Client</span>
-            </div>
-            <div className="welcome-content">
-              <p className="eyebrow">Seu espaço de trabalho</p>
-              <h1>
-                Suas conversas.
-                <br />
-                Cada conta no seu lugar.
-              </h1>
-              <p className="welcome-description">
-                Conecte suas contas Google Workspace e alterne entre elas na mesma janela.
-              </p>
-              {!native && (
-                <div className="preview-note">
-                  Abra o aplicativo desktop para conectar suas contas. Esta janela mostra apenas a interface.
-                </div>
-              )}
-              <div className="welcome-action">
-                {state.configured ? (
-                  <Button
-                    appearance="primary"
-                    size="large"
-                    icon={<Add24Regular />}
-                    disabled={!native || connecting}
-                    onClick={() => void connect()}
-                  >
-                    Conectar conta Google
-                  </Button>
-                ) : (
-                  <Button
-                    appearance="primary"
-                    size="large"
-                    icon={<ArrowUpload24Regular />}
-                    disabled={!native || importing}
-                    onClick={() => void importCredentials()}
-                  >
-                    Importar credenciais Google
-                  </Button>
-                )}
-                <Button appearance="subtle" onClick={() => setSettings(true)}>
-                  Como conectar
-                </Button>
-              </div>
-              <p className="welcome-detail">
-                {state.configured
-                  ? "Projeto configurado. O login abre no seu navegador."
-                  : "Primeiro, importe o arquivo OAuth do seu projeto Google Cloud."}
-              </p>
-            </div>
-            <div className="welcome-footer">
-              <span>Chat para o trabalho</span>
-              <span>Windows · Linux · macOS</span>
-            </div>
-          </div>
-        )}
-      </main>
-      <Dialog open={settings} onOpenChange={(_, data) => setSettings(data.open)}>
-        <DialogSurface className="settings-dialog">
-          <DialogBody>
-            <DialogTitle
-              action={
-                <IconButton label="Fechar configurações" appearance="subtle" onClick={() => setSettings(false)}>
-                  <Dismiss24Regular />
-                </IconButton>
-              }
+          <div className="rail-bottom">
+            <IconButton
+              label={dark ? "Usar tema claro" : "Usar tema escuro"}
+              appearance="subtle"
+              onClick={() => setAppearance(dark ? "light" : "dark")}
             >
-              Configurações
-            </DialogTitle>
-            <DialogContent>
-              {error && <Notice>{error}</Notice>}
-              <section className="settings-section">
-                <h2>Contas Google</h2>
-                <p>As contas mantêm sessões separadas. Remover uma conta encerra a sessão neste aplicativo.</p>
-                {state.accounts.map((a) => (
-                  <div className="settings-account" key={a.id}>
-                    <AccountAvatar account={a} />
-                    <div>
-                      <strong>{a.name || a.email}</strong>
-                      <span>{a.email}</span>
+              {dark ? <WeatherSunny24Regular /> : <WeatherMoon24Regular />}
+            </IconButton>
+            <IconButton label="Configurações e contas" appearance="subtle" onClick={() => setSettings(true)}>
+              <Settings24Regular />
+            </IconButton>
+          </div>
+        </nav>
+        <main id="main-content" className="main" tabIndex={-1}>
+          {error && !settings && (
+            <div className="global-notice">
+              <Notice>{error}</Notice>
+            </div>
+          )}
+          {connecting && !settings && (
+            <div className="connection-status" role="status">
+              <Spinner size="tiny" /> Conclua o login no navegador{" "}
+              <Button size="small" onClick={() => void Desktop.cancelLogin()}>
+                Cancelar
+              </Button>
+            </div>
+          )}
+          {starting ? (
+            <div className="center-state">
+              <Spinner label="Carregando suas contas" />
+            </div>
+          ) : account ? (
+            <Workspace key={account.id} account={account} onSettings={() => setSettings(true)} />
+          ) : (
+            <div className="welcome">
+              <div className="welcome-heading">
+                <ChatMultiple24Regular />
+                <span>Google Chat Client</span>
+              </div>
+              <div className="welcome-content">
+                <p className="eyebrow">Seu espaço de trabalho</p>
+                <h1>
+                  Suas conversas.
+                  <br />
+                  Cada conta no seu lugar.
+                </h1>
+                <p className="welcome-description">
+                  Conecte suas contas Google Workspace e alterne entre elas na mesma janela.
+                </p>
+                {!native && (
+                  <div className="preview-note">
+                    Abra o aplicativo desktop para conectar suas contas. Esta janela mostra apenas a interface.
+                  </div>
+                )}
+                <div className="welcome-action">
+                  {state.configured ? (
+                    <Button
+                      appearance="primary"
+                      size="large"
+                      icon={<Add24Regular />}
+                      disabled={!native || connecting}
+                      onClick={() => void connect()}
+                    >
+                      Conectar conta Google
+                    </Button>
+                  ) : (
+                    <Button
+                      appearance="primary"
+                      size="large"
+                      icon={<ArrowUpload24Regular />}
+                      disabled={!native || importing}
+                      onClick={() => void importCredentials()}
+                    >
+                      Importar credenciais Google
+                    </Button>
+                  )}
+                  <Button appearance="subtle" onClick={() => setSettings(true)}>
+                    Como conectar
+                  </Button>
+                </div>
+                <p className="welcome-detail">
+                  {state.configured
+                    ? "Projeto configurado. O login abre no seu navegador."
+                    : "Primeiro, importe o arquivo OAuth do seu projeto Google Cloud."}
+                </p>
+              </div>
+              <div className="welcome-footer">
+                <span>Chat para o trabalho</span>
+                <span>Windows · Linux · macOS</span>
+              </div>
+            </div>
+          )}
+        </main>
+        <Dialog open={settings} onOpenChange={(_, data) => setSettings(data.open)}>
+          <DialogSurface className="settings-dialog">
+            <DialogBody>
+              <DialogTitle
+                action={
+                  <IconButton label="Fechar configurações" appearance="subtle" onClick={() => setSettings(false)}>
+                    <Dismiss24Regular />
+                  </IconButton>
+                }
+              >
+                Configurações
+              </DialogTitle>
+              <DialogContent>
+                {error && <Notice>{error}</Notice>}
+                <section className="settings-section">
+                  <h2>Contas Google</h2>
+                  <p>As contas mantêm sessões separadas. Remover uma conta encerra a sessão neste aplicativo.</p>
+                  {state.accounts.map((a) => (
+                    <div className="settings-account" key={a.id}>
+                      <AccountAvatar account={a} />
+                      <div>
+                        <strong>{a.name || a.email}</strong>
+                        <span>{a.email}</span>
+                      </div>
+                      <Button disabled={removing !== "" || connecting} onClick={() => void remove(a.id)}>
+                        {removing === a.id ? "Removendo…" : "Remover"}
+                      </Button>
                     </div>
-                    <Button disabled={removing !== "" || connecting} onClick={() => void remove(a.id)}>
-                      {removing === a.id ? "Removendo…" : "Remover"}
+                  ))}
+                  {connecting ? (
+                    <div className="login-pending" role="status">
+                      <Spinner size="tiny" label="Conclua o login no navegador" />
+                      <Button onClick={() => void Desktop.cancelLogin()}>Cancelar</Button>
+                    </div>
+                  ) : (
+                    <Button
+                      icon={<Add24Regular />}
+                      disabled={!native || !state.configured || importing}
+                      onClick={() => void connect()}
+                    >
+                      Adicionar conta Google
+                    </Button>
+                  )}
+                </section>
+                <section className="settings-section">
+                  <h2>Projeto Google Cloud</h2>
+                  <p>
+                    Habilite a Google Chat API e crie um cliente OAuth do tipo{" "}
+                    <strong>Aplicativo para computador</strong>. Baixe o JSON e importe aqui.
+                  </p>
+                  <div className="settings-actions">
+                    <Button
+                      icon={<ArrowUpload24Regular />}
+                      disabled={!native || importing || connecting}
+                      onClick={() => void importCredentials()}
+                    >
+                      {importing ? "Importando…" : "Importar arquivo JSON"}
+                    </Button>
+                    <Button
+                      appearance="subtle"
+                      icon={<Open24Regular />}
+                      onClick={() => void openLink("https://console.cloud.google.com/auth/clients")}
+                    >
+                      Abrir Google Cloud
                     </Button>
                   </div>
-                ))}
-                {connecting ? (
-                  <div className="login-pending" role="status">
-                    <Spinner size="tiny" label="Conclua o login no navegador" />
-                    <Button onClick={() => void Desktop.cancelLogin()}>Cancelar</Button>
-                  </div>
-                ) : (
-                  <Button
-                    icon={<Add24Regular />}
-                    disabled={!native || !state.configured || importing}
-                    onClick={() => void connect()}
+                  <p className="configuration-state">
+                    {state.configured ? "Projeto configurado" : "Nenhum projeto configurado"}
+                  </p>
+                  {state.clientId && <code className="client-id">{state.clientId}</code>}
+                  <p>
+                    Para contas de mais de uma organização, o público do projeto precisa ser <strong>Externo</strong>,
+                    com cada conta como usuária de teste. Nesse modo o Google encerra a sessão a cada 7 dias e a conta
+                    precisa ser adicionada de novo.
+                  </p>
+                  <p>
+                    O login pode depender da liberação do aplicativo pelo administrador do Workspace. As credenciais
+                    ficam no chaveiro do sistema.
+                  </p>
+                </section>
+                <section className="settings-section appearance-setting">
+                  <label htmlFor="appearance">Aparência</label>
+                  <Select
+                    id="appearance"
+                    value={appearance}
+                    onChange={(_, data) => setAppearance(data.value as Appearance)}
                   >
-                    Adicionar conta Google
-                  </Button>
-                )}
-              </section>
-              <section className="settings-section">
-                <h2>Projeto Google Cloud</h2>
-                <p>
-                  Habilite a Google Chat API e crie um cliente OAuth do tipo <strong>Aplicativo para computador</strong>
-                  . Baixe o JSON e importe aqui.
-                </p>
-                <div className="settings-actions">
-                  <Button
-                    icon={<ArrowUpload24Regular />}
-                    disabled={!native || importing || connecting}
-                    onClick={() => void importCredentials()}
-                  >
-                    {importing ? "Importando…" : "Importar arquivo JSON"}
-                  </Button>
-                  <Button
-                    appearance="subtle"
-                    icon={<Open24Regular />}
-                    onClick={() => void openLink("https://console.cloud.google.com/auth/clients")}
-                  >
-                    Abrir Google Cloud
-                  </Button>
-                </div>
-                <p className="configuration-state">
-                  {state.configured ? "Projeto configurado" : "Nenhum projeto configurado"}
-                </p>
-                {state.clientId && <code className="client-id">{state.clientId}</code>}
-                <p>
-                  Para contas de mais de uma organização, o público do projeto precisa ser <strong>Externo</strong>, com
-                  cada conta como usuária de teste. Nesse modo o Google encerra a sessão a cada 7 dias e a conta precisa
-                  ser adicionada de novo.
-                </p>
-                <p>
-                  O login pode depender da liberação do aplicativo pelo administrador do Workspace. As credenciais ficam
-                  no chaveiro do sistema.
-                </p>
-              </section>
-              <section className="settings-section appearance-setting">
-                <label htmlFor="appearance">Aparência</label>
-                <Select
-                  id="appearance"
-                  value={appearance}
-                  onChange={(_, data) => setAppearance(data.value as Appearance)}
-                >
-                  <option value="system">Seguir o sistema</option>
-                  <option value="light">Claro</option>
-                  <option value="dark">Escuro</option>
-                </Select>
-              </section>
-            </DialogContent>
-            <DialogActions>
-              <Button appearance="primary" onClick={() => setSettings(false)}>
-                Concluir
-              </Button>
-            </DialogActions>
-          </DialogBody>
-        </DialogSurface>
-      </Dialog>
+                    <option value="system">Seguir o sistema</option>
+                    <option value="light">Claro</option>
+                    <option value="dark">Escuro</option>
+                  </Select>
+                </section>
+              </DialogContent>
+              <DialogActions>
+                <Button appearance="primary" onClick={() => setSettings(false)}>
+                  Concluir
+                </Button>
+              </DialogActions>
+            </DialogBody>
+          </DialogSurface>
+        </Dialog>
+      </div>
     </FluentProvider>
   );
 }

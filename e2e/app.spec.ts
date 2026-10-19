@@ -176,3 +176,23 @@ test("filtro e abas restringem a lista carregada", async ({ page }) => {
   await page.getByRole("textbox", { name: "Filtrar conversas carregadas" }).fill("zzz");
   await expect(page.getByText("Nenhuma conversa corresponde ao filtro.")).toBeVisible();
 });
+
+test("tooltip fica aberto enquanto o mouse está no ícone", async ({ page }) => {
+  // O FluentProvider copia a className para o contêiner dos portais. Se ela for
+  // a do layout, o contêiner cobre a tela, o ícone perde o hover e o tooltip pisca.
+  await page.goto("/");
+  const button = page.getByRole("button", { name: "Usar tema escuro" });
+  await button.hover();
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  for (let i = 0; i < 8; i++) {
+    await page.waitForTimeout(100);
+    await expect(page.getByRole("tooltip")).toHaveCount(1);
+  }
+  const box = await button.boundingBox();
+  if (!box) throw new Error("botão sem posição");
+  const onTop = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"),
+    [box.x + box.width / 2, box.y + box.height / 2],
+  );
+  expect(onTop).toBe("Usar tema escuro");
+});

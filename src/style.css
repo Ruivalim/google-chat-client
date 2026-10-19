@@ -662,6 +662,8 @@ a {
   color: var(--text);
 }
 .client-id {
+  display: block;
+  margin-bottom: 12px;
   font-size: 0.75rem;
   color: var(--muted);
   overflow-wrap: anywhere;
