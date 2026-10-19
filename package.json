@@ -1,0 +1,31 @@
+{
+  "name": "google-chat-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fluentui/react-components": "9.74.10",
+    "@fluentui/react-icons": "2.0.344",
+    "mygo-runtime": "0.5.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "mygo-cli": "0.5.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  },
+  "scripts": {
+    "dev": "mygo dev",
+    "dev:web": "vite --host 127.0.0.1",
+    "generate": "mygo generate",
+    "build": "mygo build",
+    "build:all": "mygo build -platform linux/amd64,windows/amd64,darwin/universal",
+    "build:web": "tsc --noEmit && vite build",
+    "lint": "tsc --noEmit",
+    "fmt": "biome format --write src index.html vite.config.ts mygo.config.ts package.json tsconfig.json"
+  }
+}

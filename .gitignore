@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.mygo/
+.cache/
+.env
+.env.*
+!.env.example
+src/mygo.ts
+coverage/
+client_secret*.json
+credentials*.json
