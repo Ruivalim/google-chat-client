@@ -9,5 +9,6 @@ export default defineConfig({
   buildCommand: "bun run build:web",
   frontendDist: "dist",
   bindings: "src/mygo.ts",
+  i18n: { dir: "locales", source: "en" },
   out: "build",
 });

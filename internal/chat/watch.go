@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ruivalim/google-chat-client/locales"
 	"log"
 	"net/http"
 	"net/url"
@@ -136,7 +137,7 @@ func (w *Watcher) check(ctx context.Context) {
 		}
 		// Uma conta com problema (sessão vencida, API desativada) não para as outras.
 		if err := w.checkAccount(ctx, a.ID); err != nil {
-			log.Printf("notificações de %s: %v", a.Email, err)
+			log.Printf("notifications for %s: %v", a.Email, err)
 		}
 	}
 }
@@ -189,7 +190,7 @@ func (w *Watcher) checkAccount(ctx context.Context, id string) error {
 		messages, err := w.s.messagesAfter(ctx, id, p.space.Name, p.after)
 		if err != nil {
 			// A linha de base fica onde estava, e a próxima rodada tenta de novo.
-			log.Printf("mensagens novas em %s: %v", p.space.Name, err)
+			log.Printf("new messages in %s: %v", p.space.Name, err)
 			continue
 		}
 		space := p.space
@@ -253,7 +254,7 @@ func (s *Service) activeSpaces(ctx context.Context, accountID string) ([]Space, 
 
 func (s *Service) messagesAfter(ctx context.Context, accountID, space string, after time.Time) ([]Message, error) {
 	if !spacePattern.MatchString(space) {
-		return nil, errors.New("identificador de conversa inválido")
+		return nil, errors.New(locales.ErrInvalidSpace())
 	}
 	q := url.Values{
 		"pageSize": {"25"},

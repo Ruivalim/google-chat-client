@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"github.com/ruivalim/google-chat-client/locales"
 	"log"
 	"path/filepath"
 	"sync/atomic"
@@ -63,13 +64,13 @@ func main() {
 			Icon:    trayIcon,
 			ToolTip: "Google Chat Client",
 			Menu: mygo.NewMenu([]*mygo.MenuItem{
-				{Label: "Abrir Google Chat Client", Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
+				{Label: locales.TrayOpen(), Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
 				mygo.Separator(),
-				{Label: "Sair", Role: mygo.RoleQuit},
+				{Label: locales.TrayQuit(), Role: mygo.RoleQuit},
 			}),
 		})
 		if err != nil {
-			log.Println("bandeja:", err)
+			log.Println("tray:", err)
 			return
 		}
 		desktop.tray = tray

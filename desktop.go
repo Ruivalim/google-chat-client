@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/ruivalim/google-chat-client/locales"
 	"io"
 	"net/url"
 	"os"
@@ -48,7 +49,7 @@ func (d *Desktop) State() chat.State { return d.service.State() }
 
 func (d *Desktop) ImportCredentials(ctx context.Context) (chat.State, error) {
 	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
-		Parent: mygo.CallerWindow(ctx), Title: "Importar credenciais OAuth para computador",
+		Parent: mygo.CallerWindow(ctx), Title: locales.DialogImportTitle(),
 		Filters: []mygo.FileFilter{{Name: "Credenciais Google (.json)", Extensions: []string{"json"}}},
 	})
 	if err != nil {
@@ -66,7 +67,7 @@ func (d *Desktop) ImportCredentials(ctx context.Context) (chat.State, error) {
 		Installed chat.Credentials `json:"installed"`
 	}
 	if json.NewDecoder(io.LimitReader(f, 64<<10)).Decode(&file) != nil || file.Installed.ClientID == "" {
-		return d.State(), errors.New("selecione o JSON de um cliente OAuth do tipo Aplicativo para computador, baixado no Google Cloud")
+		return d.State(), errors.New(locales.ErrCredentialsFile())
 	}
 	err = d.service.ImportProject(file.Installed)
 	return d.State(), err
@@ -76,7 +77,7 @@ func (d *Desktop) ConnectAccount(ctx context.Context, clientID string) (chat.Sta
 	d.mu.Lock()
 	if d.loginCancel != nil {
 		d.mu.Unlock()
-		return d.State(), errors.New("já existe um login em andamento")
+		return d.State(), errors.New(locales.ErrLoginRunning())
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	d.loginCancel = cancel
@@ -108,7 +109,7 @@ func (d *Desktop) LoginURL() string {
 // do passo a passo.
 func (d *Desktop) CopyText(text string) error {
 	if text == "" || len(text) > 4096 {
-		return errors.New("texto vazio ou grande demais para copiar")
+		return errors.New(locales.ErrCopyText())
 	}
 	return mygo.Clipboard.Write(transfer.TextData(text))
 }
@@ -116,7 +117,7 @@ func (d *Desktop) CopyText(text string) error {
 func (d *Desktop) CopyLoginURL() error {
 	u := d.LoginURL()
 	if u == "" {
-		return errors.New("não há login em andamento")
+		return errors.New(locales.ErrNoLogin())
 	}
 	return mygo.Clipboard.Write(transfer.TextData(u))
 }
@@ -165,7 +166,7 @@ func (d *Desktop) SendMessage(ctx context.Context, accountID, space, text, threa
 func (d *Desktop) OpenLink(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-		return errors.New("este link não é um endereço web válido")
+		return errors.New(locales.ErrInvalidLink())
 	}
 	return mygo.Shell.OpenExternal(u.String())
 }

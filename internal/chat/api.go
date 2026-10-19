@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/ruivalim/google-chat-client/locales"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -27,7 +28,7 @@ func (s *Service) send(ctx context.Context, client *http.Client, accountID strin
 	req.Header.Set("Authorization", "Bearer "+token)
 	r, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New("não foi possível alcançar o Google Chat; confira a conexão e tente novamente")
+		return nil, errors.New(locales.ErrNetwork())
 	}
 	return r, nil
 }
@@ -62,7 +63,7 @@ func (s *Service) api(ctx context.Context, accountID, method, path string, query
 		return nil
 	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, 8<<20)).Decode(out); err != nil {
-		return errors.New("a resposta do Google Chat não pôde ser lida")
+		return errors.New(locales.ErrBadResponse())
 	}
 	return nil
 }
@@ -90,25 +91,25 @@ func apiError(r *http.Response) error {
 		if said == "" {
 			return errors.New(text)
 		}
-		return fmt.Errorf("%s. O Google disse: %s", text, said)
+		return errors.New(locales.ErrGoogleSaid(text, said))
 	}
 	switch {
 	case slices.Contains(reasons, "SERVICE_DISABLED"):
-		return with("a Google Chat API não está ativada no projeto desta conta; ative em APIs e serviços > Biblioteca, no Google Cloud")
+		return with(locales.ErrServiceDisabled())
 	case slices.Contains(reasons, "ACCESS_TOKEN_SCOPE_INSUFFICIENT"):
-		return with("faltou uma permissão de Chat nesta sessão; confira os escopos em Acesso a dados e conecte a conta de novo")
+		return with(locales.ErrScopeMissing())
 	case r.StatusCode == http.StatusNotFound && strings.Contains(strings.ToLower(said), "chat app not found"):
-		return with("o app de Chat não está configurado no projeto; preencha nome, ícone e descrição na aba Configuração da Google Chat API")
+		return with(locales.ErrChatAppMissing())
 	case r.StatusCode == http.StatusUnauthorized:
-		return errors.New("a sessão foi recusada; conecte essa conta novamente")
+		return errors.New(locales.ErrUnauthorized())
 	case r.StatusCode == http.StatusForbidden:
-		return with("o Google recusou a permissão")
+		return with(locales.ErrForbidden())
 	case r.StatusCode == http.StatusTooManyRequests:
-		return errors.New("o Google limitou as consultas; aguarde um pouco antes de atualizar")
+		return errors.New(locales.ErrRateLimited())
 	case r.StatusCode == http.StatusNotFound:
-		return errors.New("essa conversa ou mensagem não está mais disponível para a conta selecionada")
+		return errors.New(locales.ErrNotFound())
 	}
-	return with(fmt.Sprintf("o Google Chat retornou um erro (%d)", r.StatusCode))
+	return with(locales.ErrStatus(strconv.Itoa(r.StatusCode)))
 }
 
 func (s *Service) Spaces(ctx context.Context, accountID, pageToken string) (SpacePage, error) {
@@ -158,7 +159,7 @@ func (s *Service) Spaces(ctx context.Context, accountID, pageToken string) (Spac
 
 func (s *Service) spaceLabel(ctx context.Context, accountID, space string) (string, error) {
 	if !spacePattern.MatchString(space) {
-		return "", errors.New("identificador de conversa inválido")
+		return "", errors.New(locales.ErrInvalidSpace())
 	}
 	var page struct {
 		Memberships []struct {
@@ -188,7 +189,7 @@ func (s *Service) spaceLabel(ctx context.Context, accountID, space string) (stri
 func (s *Service) Messages(ctx context.Context, accountID, space, pageToken, thread string) (MessagePage, error) {
 	page := MessagePage{Messages: []Message{}}
 	if !spacePattern.MatchString(space) {
-		return page, errors.New("identificador de conversa inválido")
+		return page, errors.New(locales.ErrInvalidSpace())
 	}
 	q := url.Values{"pageSize": {"50"}, "orderBy": {"create_time DESC"}}
 	if pageToken != "" {
@@ -196,7 +197,7 @@ func (s *Service) Messages(ctx context.Context, accountID, space, pageToken, thr
 	}
 	if thread != "" {
 		if !validThread(space, thread) {
-			return page, errors.New("a thread não pertence à conversa selecionada")
+			return page, errors.New(locales.ErrThreadMismatch())
 		}
 		q.Set("filter", "thread.name = "+thread)
 	}
@@ -210,19 +211,19 @@ func (s *Service) Messages(ctx context.Context, accountID, space, pageToken, thr
 // SendMessage envia texto, um anexo já enviado com UploadAttachment, ou os dois.
 func (s *Service) SendMessage(ctx context.Context, accountID, space, text, thread, id string, attachment *AttachmentDataRef) (Message, error) {
 	if !spacePattern.MatchString(space) {
-		return Message{}, errors.New("identificador de conversa inválido")
+		return Message{}, errors.New(locales.ErrInvalidSpace())
 	}
 	if attachment != nil && attachment.AttachmentUploadToken == "" {
-		return Message{}, errors.New("o anexo não terminou de subir; tente enviar de novo")
+		return Message{}, errors.New(locales.ErrAttachmentNotUploaded())
 	}
 	if (strings.TrimSpace(text) == "" && attachment == nil) || len(text) > 32000 {
-		return Message{}, errors.New("escreva uma mensagem de até 32.000 bytes")
+		return Message{}, errors.New(locales.ErrMessageSize())
 	}
 	if id == "" {
 		id = requestID()
 	}
 	if !requestIDPattern.MatchString(id) {
-		return Message{}, errors.New("identificador de envio inválido")
+		return Message{}, errors.New(locales.ErrInvalidRequestId())
 	}
 	q := url.Values{"requestId": {id}}
 	body := map[string]any{"text": text}
@@ -231,7 +232,7 @@ func (s *Service) SendMessage(ctx context.Context, accountID, space, text, threa
 	}
 	if thread != "" {
 		if !validThread(space, thread) {
-			return Message{}, errors.New("a thread não pertence à conversa selecionada")
+			return Message{}, errors.New(locales.ErrThreadMismatch())
 		}
 		body["thread"] = Thread{Name: thread}
 		q.Set("messageReplyOption", "REPLY_MESSAGE_OR_FAIL")

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"github.com/ruivalim/google-chat-client/locales"
 	"log"
 	"strings"
 	"unicode/utf8"
@@ -23,7 +23,7 @@ func (d *Desktop) notify(win *mygo.Window, a chat.Activity) {
 	state := d.service.State()
 	title := senderName(a.Message.Sender)
 	if a.Space.SpaceType != "DIRECT_MESSAGE" && a.Space.DisplayName != "" {
-		title += " em " + a.Space.DisplayName
+		title = locales.NotifyInSpace(title, a.Space.DisplayName)
 	}
 	// Com várias contas, o título diz de qual delas é a conversa.
 	if len(state.Accounts) > 1 {
@@ -46,12 +46,12 @@ func (d *Desktop) notify(win *mygo.Window, a chat.Activity) {
 		n.Close()
 	})
 	if err := n.Show(); err != nil {
-		log.Printf("notificação: %v", err)
+		log.Printf("notification: %v", err)
 	}
 }
 
 func senderName(u chat.User) string {
-	return firstNonEmpty(u.DisplayName, u.Email, "Mensagem nova")
+	return firstNonEmpty(u.DisplayName, u.Email, locales.NotifyNewMessage())
 }
 
 func firstNonEmpty(values ...string) string {
@@ -67,9 +67,9 @@ func preview(m chat.Message) string {
 	text := strings.Join(strings.Fields(m.Text), " ")
 	if text == "" {
 		if len(m.Attachment) > 0 {
-			return fmt.Sprintf("Enviou %s", firstNonEmpty(m.Attachment[0].ContentName, "um anexo"))
+			return locales.NotifySentFile(firstNonEmpty(m.Attachment[0].ContentName, locales.NotifyAnAttachment()))
 		}
-		return "Abra a conversa para ver a mensagem"
+		return locales.NotifyOpenToRead()
 	}
 	if utf8.RuneCountInString(text) > 180 {
 		return string([]rune(text)[:179]) + "…"
@@ -87,13 +87,7 @@ func (d *Desktop) unreadChanged(win *mygo.Window, list []chat.Unread) {
 	for _, u := range list {
 		total += u.Count
 	}
-	tip := "Google Chat Client"
-	if total == 1 {
-		tip += " · 1 mensagem não lida"
-	} else if total > 1 {
-		tip += fmt.Sprintf(" · %d mensagens não lidas", total)
-	}
-	d.tray.SetToolTip(tip)
+	d.tray.SetToolTip(locales.UnreadTooltip(total))
 }
 
 func (d *Desktop) Unread() []chat.Unread {

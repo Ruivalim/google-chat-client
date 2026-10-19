@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ruivalim/google-chat-client/locales"
 	"io"
 	"mime"
 	"net/http"
@@ -24,19 +25,19 @@ const MaxAttachmentSize = 200 << 20
 // que a mensagem leva. O arquivo vai em streaming, sem carregar na memória.
 func (s *Service) UploadAttachment(ctx context.Context, accountID, space, path string) (AttachmentDataRef, error) {
 	if !spacePattern.MatchString(space) {
-		return AttachmentDataRef{}, errors.New("identificador de conversa inválido")
+		return AttachmentDataRef{}, errors.New(locales.ErrInvalidSpace())
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return AttachmentDataRef{}, fmt.Errorf("abrir o arquivo: %w", err)
+		return AttachmentDataRef{}, fmt.Errorf("%s: %w", locales.ErrOpenFile(), err)
 	}
 	defer f.Close()
 	info, err := f.Stat()
 	if err != nil || !info.Mode().IsRegular() {
-		return AttachmentDataRef{}, errors.New("escolha um arquivo comum, não uma pasta")
+		return AttachmentDataRef{}, errors.New(locales.ErrNotAFile())
 	}
 	if info.Size() > MaxAttachmentSize {
-		return AttachmentDataRef{}, fmt.Errorf("%s tem mais de 200 MB, o limite do Google Chat", info.Name())
+		return AttachmentDataRef{}, errors.New(locales.ErrFileTooLarge(info.Name()))
 	}
 	contentType, err := sniff(f, info.Name())
 	if err != nil {
@@ -70,7 +71,7 @@ func (s *Service) UploadAttachment(ctx context.Context, accountID, space, path s
 		AttachmentDataRef AttachmentDataRef `json:"attachmentDataRef"`
 	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&out); err != nil || out.AttachmentDataRef.AttachmentUploadToken == "" {
-		return AttachmentDataRef{}, errors.New("o Google não confirmou o envio do arquivo")
+		return AttachmentDataRef{}, errors.New(locales.ErrUploadUnconfirmed())
 	}
 	return out.AttachmentDataRef, nil
 }
@@ -83,10 +84,10 @@ func sniff(f *os.File, name string) (string, error) {
 	head := make([]byte, 512)
 	n, err := io.ReadFull(f, head)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
-		return "", fmt.Errorf("ler o arquivo: %w", err)
+		return "", fmt.Errorf("%s: %w", locales.ErrReadFile(), err)
 	}
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return "", fmt.Errorf("ler o arquivo: %w", err)
+		return "", fmt.Errorf("%s: %w", locales.ErrReadFile(), err)
 	}
 	return http.DetectContentType(bytes.Clone(head[:n])), nil
 }
@@ -95,7 +96,7 @@ func sniff(f *os.File, name string) (string, error) {
 // vieram. resourceName vem de Attachment.AttachmentDataRef.
 func (s *Service) DownloadAttachment(ctx context.Context, accountID, resourceName string, w io.Writer) (int64, error) {
 	if !validResourceName(resourceName) {
-		return 0, errors.New("referência de anexo inválida")
+		return 0, errors.New(locales.ErrAttachmentRef())
 	}
 	segments := strings.Split(resourceName, "/")
 	for i, seg := range segments {
@@ -115,10 +116,10 @@ func (s *Service) DownloadAttachment(ctx context.Context, accountID, resourceNam
 	}
 	n, err := io.Copy(w, io.LimitReader(r.Body, MaxAttachmentSize+1))
 	if err != nil {
-		return n, errors.New("o download foi interrompido; tente de novo")
+		return n, errors.New(locales.ErrDownloadInterrupted())
 	}
 	if n > MaxAttachmentSize {
-		return n, errors.New("o anexo veio maior que o limite do Google Chat")
+		return n, errors.New(locales.ErrDownloadTooLarge())
 	}
 	return n, nil
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ruivalim/google-chat-client/locales"
 	"io"
 	"net"
 	"net/http"
@@ -41,14 +42,14 @@ func oauthConfig(c Credentials, redirect string) *oauth2.Config {
 // conectada por outro projeto passa a usar este.
 func (s *Service) AddAccount(parent context.Context, clientID string, openBrowser func(string) error) (Account, error) {
 	if !s.authMu.TryLock() {
-		return Account{}, errors.New("já existe um login em andamento; conclua ou cancele antes de iniciar outro")
+		return Account{}, errors.New(locales.ErrLoginBusy())
 	}
 	defer s.authMu.Unlock()
 	s.mu.RLock()
 	imported := slices.ContainsFunc(s.config.Projects, func(p Project) bool { return p.ClientID == clientID })
 	s.mu.RUnlock()
 	if !imported {
-		return Account{}, errors.New("escolha um projeto importado para conectar a conta")
+		return Account{}, errors.New(locales.ErrChooseProject())
 	}
 	c, err := s.credentials(clientID)
 	if err != nil {
@@ -58,7 +59,7 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 	defer cancel()
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
-		return Account{}, fmt.Errorf("abrir o retorno local do login: %w", err)
+		return Account{}, fmt.Errorf("%s: %w", locales.ErrCallbackListen(), err)
 	}
 	defer listener.Close()
 	state := rand.Text()
@@ -75,7 +76,7 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("state")), []byte(state)) != 1 {
-			http.Error(w, "Retorno de login inválido. Volte ao aplicativo e tente novamente.", http.StatusBadRequest)
+			http.Error(w, locales.CallbackInvalid(), http.StatusBadRequest)
 			return
 		}
 		value := callback{code: r.URL.Query().Get("code")}
@@ -85,12 +86,12 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 		select {
 		case result <- value:
 			if value.err != nil {
-				fmt.Fprint(w, "O login não foi concluído. Volte ao Google Chat Client para ver o motivo.")
+				fmt.Fprint(w, locales.CallbackFailed())
 			} else {
-				fmt.Fprint(w, "Pode voltar ao Google Chat Client. O aplicativo está concluindo a conexão da conta.")
+				fmt.Fprint(w, locales.CallbackDone())
 			}
 		default:
-			http.Error(w, "Este retorno já foi recebido.", http.StatusGone)
+			http.Error(w, locales.CallbackRepeated(), http.StatusGone)
 		}
 	})
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, MaxHeaderBytes: 8192}
@@ -104,13 +105,13 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 	go func() { _ = server.Serve(listener) }()
 	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("prompt", "consent select_account"))
 	if err := openBrowser(url); err != nil {
-		return Account{}, errors.New("não foi possível abrir o navegador do sistema")
+		return Account{}, errors.New(locales.ErrBrowser())
 	}
 	var response callback
 	select {
 	case response = <-result:
 	case <-ctx.Done():
-		return Account{}, errors.New("o login foi cancelado ou expirou; tente conectar a conta novamente")
+		return Account{}, errors.New(locales.ErrLoginCanceled())
 	}
 	if response.err != nil {
 		return Account{}, response.err
@@ -118,12 +119,12 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, s.http)
 	token, err := cfg.Exchange(ctx, response.code, oauth2.VerifierOption(verifier))
 	if err != nil {
-		return Account{}, errors.New("o Google não concluiu o login; confira se o cliente OAuth é do tipo Aplicativo para computador")
+		return Account{}, errors.New(locales.ErrExchange())
 	}
 	if granted, ok := token.Extra("scope").(string); ok {
 		for _, required := range scopes[3:] {
 			if !slices.Contains(strings.Fields(granted), required) {
-				return Account{}, errors.New("faltou autorizar uma permissão de Chat; conecte novamente e aceite as permissões solicitadas")
+				return Account{}, errors.New(locales.ErrScopeDenied())
 			}
 		}
 	}
@@ -131,7 +132,7 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	r, err := s.http.Do(req)
 	if err != nil {
-		return Account{}, errors.New("não foi possível consultar a identidade da conta Google")
+		return Account{}, errors.New(locales.ErrUserinfo())
 	}
 	defer r.Body.Close()
 	var user struct {
@@ -142,7 +143,7 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 		Domain   string `json:"hd"`
 	}
 	if r.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&user) != nil || !user.Verified || !accountIDPattern.MatchString(user.Sub) || user.Email == "" {
-		return Account{}, errors.New("o Google não retornou uma identidade de conta válida")
+		return Account{}, errors.New(locales.ErrIdentity())
 	}
 	account := Account{ID: user.Sub, Name: user.Name, Email: user.Email, Domain: user.Domain, ClientID: clientID}
 	if err := s.attachAccount(account, token); err != nil {
@@ -153,7 +154,7 @@ func (s *Service) AddAccount(parent context.Context, clientID string, openBrowse
 
 func (s *Service) attachAccount(a Account, token *oauth2.Token) error {
 	if token.RefreshToken == "" {
-		return errors.New("o Google não forneceu uma sessão persistente; tente conectar novamente aceitando o consentimento")
+		return errors.New(locales.ErrNoRefresh())
 	}
 	s.mu.RLock()
 	x := s.sessions[a.ID]
@@ -166,7 +167,7 @@ func (s *Service) attachAccount(a Account, token *oauth2.Token) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.vault.Set("refresh:"+a.ID, []byte(token.RefreshToken)); err != nil {
-		return fmt.Errorf("guardar sessão no chaveiro do sistema: %w", err)
+		return fmt.Errorf("%s: %w", locales.ErrSaveSession(), err)
 	}
 	next := s.config
 	next.Accounts = slices.Clone(s.config.Accounts)
@@ -191,13 +192,13 @@ func (s *Service) attachAccount(a Account, token *oauth2.Token) error {
 func consentError(code string) error {
 	switch code {
 	case "access_denied":
-		return errors.New("o acesso não foi autorizado; conecte de novo e aceite as permissões pedidas")
+		return errors.New(locales.ErrAccessDenied())
 	case "admin_policy_enforced":
-		return errors.New("o administrador do Workspace desta conta bloqueou o app; peça para marcar o client ID como confiável em Segurança > Acesso e controle de dados > Controles de API")
+		return errors.New(locales.ErrAdminPolicy())
 	case "org_internal":
-		return errors.New("o projeto OAuth aceita só contas da própria organização; mude o público para Externo no Google Cloud")
+		return errors.New(locales.ErrOrgInternal())
 	}
-	return errors.New("o Google não autorizou o acesso; confira o consentimento e as políticas do Workspace")
+	return errors.New(locales.ErrConsent())
 }
 
 func requestID() string {

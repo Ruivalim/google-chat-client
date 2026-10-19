@@ -1,0 +1,133 @@
+{
+  "@@locale": "en",
+  "appName": "Google Chat Client",
+  "@appName": {
+    "description": "Nome do app."
+  },
+  "unreadTooltip": "{count, plural, =0 {Google Chat Client} one {Google Chat Client · 1 unread message} other {Google Chat Client · # unread messages}}",
+  "@unreadTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errNetwork": "couldn't reach Google Chat; check your connection and try again",
+  "errBadResponse": "Google Chat's response couldn't be read",
+  "errServiceDisabled": "the Google Chat API isn't enabled in this account's project; enable it in APIs & Services > Library, in Google Cloud",
+  "errScopeMissing": "this session is missing a Chat permission; check the scopes under Data access and connect the account again",
+  "errChatAppMissing": "the Chat app isn't configured in the project; fill in the name, icon and description on the Configuration tab of the Google Chat API",
+  "errUnauthorized": "the session was rejected; connect this account again",
+  "errForbidden": "Google denied permission",
+  "errRateLimited": "Google is rate limiting requests; wait a bit before refreshing",
+  "errNotFound": "this conversation or message is no longer available to the selected account",
+  "errInvalidSpace": "invalid conversation identifier",
+  "errThreadMismatch": "the thread doesn't belong to the selected conversation",
+  "errAttachmentNotUploaded": "the attachment didn't finish uploading; try sending again",
+  "errMessageSize": "write a message of up to 32,000 bytes",
+  "errInvalidRequestId": "invalid send identifier",
+  "dialogImportTitle": "Import desktop OAuth credentials",
+  "errCredentialsFile": "choose the JSON of a Desktop app OAuth client, downloaded from Google Cloud",
+  "errLoginRunning": "a sign-in is already in progress",
+  "errCopyText": "text is empty or too long to copy",
+  "errNoLogin": "no sign-in in progress",
+  "errInvalidLink": "this link isn't a valid web address",
+  "errReadConfig": "read configuration",
+  "errConfigCorrupt": "the local configuration couldn't be read",
+  "errConfigAccount": "the configuration contains an invalid account",
+  "errInterval": "choose one of the offered intervals",
+  "errClientType": "import the credentials of a Desktop app OAuth client",
+  "errNoSecret": "the credentials file has no client_secret",
+  "errSaveCredentials": "store credentials in the system keyring",
+  "errProjectMissing": "this project isn't imported",
+  "errProjectInUse": "remove this project's accounts before removing the project",
+  "errDeleteCredential": "remove credential from the keyring",
+  "errAccountMissing": "this account isn't connected",
+  "errCredentialsMissing": "import the project's OAuth credentials in settings; check that the system keyring is unlocked",
+  "errCredentialsInvalid": "the OAuth credentials are invalid; import the file again",
+  "errAccountRemoved": "this account was disconnected",
+  "errSessionLoad": "couldn't restore the session; unlock the keyring or connect this account again",
+  "errSessionExpired": "this account's session expired or was revoked; connect the account again",
+  "errSessionRefresh": "couldn't renew the session; check your connection and, if it persists, connect this account again",
+  "errSaveRenewed": "store the renewed session",
+  "errOpenFile": "open the file",
+  "errNotAFile": "choose a regular file, not a folder",
+  "errUploadUnconfirmed": "Google didn't confirm the file upload",
+  "errReadFile": "read the file",
+  "errAttachmentRef": "invalid attachment reference",
+  "errDownloadInterrupted": "the download was interrupted; try again",
+  "errDownloadTooLarge": "the attachment is larger than Google Chat's limit",
+  "dialogAttachTitle": "Attach files",
+  "errPickAgain": "choose the file again",
+  "dialogSaveTitle": "Save attachment",
+  "errLoginBusy": "a sign-in is already in progress; finish or cancel it before starting another",
+  "errChooseProject": "choose an imported project to connect the account",
+  "errCallbackListen": "open the local sign-in callback",
+  "callbackInvalid": "Invalid sign-in response. Go back to the app and try again.",
+  "callbackFailed": "Sign-in wasn't completed. Go back to Google Chat Client to see why.",
+  "callbackDone": "You can go back to Google Chat Client. The app is finishing connecting the account.",
+  "callbackRepeated": "This response was already received.",
+  "errBrowser": "couldn't open the system browser",
+  "errLoginCanceled": "sign-in was canceled or timed out; try connecting the account again",
+  "errExchange": "Google didn't complete the sign-in; check that the OAuth client is a Desktop app",
+  "errScopeDenied": "a Chat permission wasn't granted; connect again and accept the requested permissions",
+  "errUserinfo": "couldn't look up the Google account's identity",
+  "errIdentity": "Google didn't return a valid account identity",
+  "errNoRefresh": "Google didn't provide a persistent session; try connecting again and accept the consent",
+  "errSaveSession": "store the session in the system keyring",
+  "errAccessDenied": "access wasn't authorized; connect again and accept the requested permissions",
+  "errAdminPolicy": "this account's Workspace administrator blocked the app; ask them to mark the client ID as trusted in Security > Access and data control > API controls",
+  "errOrgInternal": "the OAuth project only accepts accounts from its own organization; change the audience to External in Google Cloud",
+  "errConsent": "Google didn't authorize access; check the consent and the Workspace policies",
+  "trayOpen": "Open Google Chat Client",
+  "trayQuit": "Quit",
+  "notifyNewMessage": "New message",
+  "notifyOpenToRead": "Open the conversation to read the message",
+  "errGoogleSaid": "{text}. Google said: {said}",
+  "@errGoogleSaid": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      }
+    }
+  },
+  "errStatus": "Google Chat returned an error ({status})",
+  "@errStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "errFileTooLarge": "{name} is larger than 200 MB, Google Chat's limit",
+  "@errFileTooLarge": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notifySentFile": "Sent {name}",
+  "@notifySentFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyInSpace": "{sender} in {space}",
+  "@notifyInSpace": {
+    "placeholders": {
+      "sender": {
+        "type": "String"
+      },
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyAnAttachment": "an attachment"
+}

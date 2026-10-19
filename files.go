@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"github.com/ruivalim/google-chat-client/locales"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,7 @@ type PickedFile struct {
 
 func (d *Desktop) PickFiles(ctx context.Context) ([]PickedFile, error) {
 	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
-		Parent: mygo.CallerWindow(ctx), Title: "Anexar arquivos", Multiple: true,
+		Parent: mygo.CallerWindow(ctx), Title: locales.DialogAttachTitle(), Multiple: true,
 	})
 	if err != nil {
 		return nil, err
@@ -63,7 +64,7 @@ func (d *Desktop) UploadAttachment(ctx context.Context, accountID, space, fileID
 	path, ok := d.picked[fileID]
 	d.mu.Unlock()
 	if !ok {
-		return chat.AttachmentDataRef{}, errors.New("escolha o arquivo de novo")
+		return chat.AttachmentDataRef{}, errors.New(locales.ErrPickAgain())
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
@@ -79,7 +80,7 @@ func (d *Desktop) DownloadAttachment(ctx context.Context, accountID, resourceNam
 	}
 	home, _ := mygo.App.Path(mygo.PathHome)
 	dest, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
-		Parent: mygo.CallerWindow(ctx), Title: "Salvar anexo", DefaultPath: filepath.Join(home, "Downloads", name),
+		Parent: mygo.CallerWindow(ctx), Title: locales.DialogSaveTitle(), DefaultPath: filepath.Join(home, "Downloads", name),
 	})
 	if err != nil || dest == "" {
 		return "", err

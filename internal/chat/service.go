@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ruivalim/google-chat-client/locales"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -49,11 +50,11 @@ func Open(path string, vault Vault) (*Service, error) {
 	}
 	data, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("ler configuração: %w", err)
+		return nil, fmt.Errorf("%s: %w", locales.ErrReadConfig(), err)
 	}
 	if len(data) > 0 {
 		if err := json.Unmarshal(data, &s.config); err != nil {
-			return nil, fmt.Errorf("a configuração local não pôde ser lida: %w", err)
+			return nil, fmt.Errorf("%s: %w", locales.ErrConfigCorrupt(), err)
 		}
 	}
 	if s.config.Accounts == nil {
@@ -75,7 +76,7 @@ func Open(path string, vault Vault) (*Service, error) {
 	}
 	for _, a := range s.config.Accounts {
 		if !accountIDPattern.MatchString(a.ID) {
-			return nil, errors.New("a configuração contém uma conta inválida")
+			return nil, errors.New(locales.ErrConfigAccount())
 		}
 		s.sessions[a.ID] = &session{}
 	}
@@ -105,7 +106,7 @@ const defaultCheckEvery = 60
 
 func (s *Service) SetNotifications(n Notifications) error {
 	if !slices.Contains(CheckIntervals, n.Every) {
-		return errors.New("escolha um dos intervalos oferecidos")
+		return errors.New(locales.ErrInterval())
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -158,16 +159,16 @@ func (s *Service) ImportProject(c Credentials) error {
 	c.ClientSecret = strings.TrimSpace(c.ClientSecret)
 	c.ProjectID = strings.TrimSpace(c.ProjectID)
 	if !strings.HasSuffix(c.ClientID, ".apps.googleusercontent.com") || strings.ContainsAny(c.ClientID, " \r\n\t") {
-		return errors.New("importe as credenciais de um cliente OAuth do tipo Aplicativo para computador")
+		return errors.New(locales.ErrClientType())
 	}
 	if c.ClientSecret == "" {
-		return errors.New("o arquivo de credenciais não contém client_secret")
+		return errors.New(locales.ErrNoSecret())
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data, _ := json.Marshal(c)
 	if err := s.vault.Set(projectKey(c.ClientID), data); err != nil {
-		return fmt.Errorf("guardar credenciais no chaveiro do sistema: %w", err)
+		return fmt.Errorf("%s: %w", locales.ErrSaveCredentials(), err)
 	}
 	next := s.config
 	next.Projects = slices.Clone(s.config.Projects)
@@ -186,13 +187,13 @@ func (s *Service) RemoveProject(clientID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !slices.ContainsFunc(s.config.Projects, func(p Project) bool { return p.ClientID == clientID }) {
-		return errors.New("esse projeto não está importado")
+		return errors.New(locales.ErrProjectMissing())
 	}
 	if slices.ContainsFunc(s.config.Accounts, func(a Account) bool { return a.ClientID == clientID }) {
-		return errors.New("remova as contas deste projeto antes de remover o projeto")
+		return errors.New(locales.ErrProjectInUse())
 	}
 	if err := s.vault.Delete(projectKey(clientID)); err != nil {
-		return fmt.Errorf("remover credencial do chaveiro: %w", err)
+		return fmt.Errorf("%s: %w", locales.ErrDeleteCredential(), err)
 	}
 	next := s.config
 	next.Projects = slices.DeleteFunc(slices.Clone(s.config.Projects), func(p Project) bool { return p.ClientID == clientID })
@@ -203,7 +204,7 @@ func (s *Service) SelectAccount(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.sessions[id]; !ok {
-		return errors.New("essa conta não está conectada")
+		return errors.New(locales.ErrAccountMissing())
 	}
 	next := s.config
 	next.ActiveAccountID = id
@@ -215,7 +216,7 @@ func (s *Service) accountSession(id string) (*session, error) {
 	x, ok := s.sessions[id]
 	s.mu.RUnlock()
 	if !ok {
-		return nil, errors.New("essa conta não está conectada")
+		return nil, errors.New(locales.ErrAccountMissing())
 	}
 	return x, nil
 }
@@ -238,7 +239,7 @@ func (s *Service) RemoveAccount(id string) error {
 		}
 	}
 	if err := s.vault.Delete("refresh:" + id); err != nil {
-		return fmt.Errorf("remover credencial do chaveiro: %w", err)
+		return fmt.Errorf("%s: %w", locales.ErrDeleteCredential(), err)
 	}
 	if err := s.saveLocked(next); err != nil {
 		x.token = nil
@@ -250,7 +251,7 @@ func (s *Service) RemoveAccount(id string) error {
 }
 
 func (s *Service) credentials(clientID string) (Credentials, error) {
-	missing := errors.New("importe as credenciais OAuth do projeto nas configurações; confira se o chaveiro do sistema está desbloqueado")
+	missing := errors.New(locales.ErrCredentialsMissing())
 	data, err := s.vault.Get(projectKey(clientID))
 	if errors.Is(err, ErrNotFound) {
 		data, err = s.legacyCredentials(clientID)
@@ -260,7 +261,7 @@ func (s *Service) credentials(clientID string) (Credentials, error) {
 	}
 	var c Credentials
 	if json.Unmarshal(data, &c) != nil || c.ClientID != clientID || c.ClientSecret == "" {
-		return c, errors.New("as credenciais OAuth são inválidas; importe o arquivo novamente")
+		return c, errors.New(locales.ErrCredentialsInvalid())
 	}
 	return c, nil
 }
@@ -291,7 +292,7 @@ func (s *Service) accountClient(id string) (string, error) {
 			return a.ClientID, nil
 		}
 	}
-	return "", errors.New("essa conta não está conectada")
+	return "", errors.New(locales.ErrAccountMissing())
 }
 
 func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
@@ -302,7 +303,7 @@ func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
 	x.mu.Lock()
 	defer x.mu.Unlock()
 	if x.removed {
-		return "", errors.New("essa conta foi desconectada")
+		return "", errors.New(locales.ErrAccountRemoved())
 	}
 	if x.token != nil && x.token.Valid() {
 		return x.token.AccessToken, nil
@@ -310,7 +311,7 @@ func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
 	if x.token == nil {
 		refresh, err := s.vault.Get("refresh:" + id)
 		if err != nil {
-			return "", errors.New("não foi possível recuperar a sessão; desbloqueie o chaveiro ou conecte essa conta novamente")
+			return "", errors.New(locales.ErrSessionLoad())
 		}
 		x.token = &oauth2.Token{RefreshToken: string(refresh)}
 	}
@@ -329,13 +330,13 @@ func (s *Service) accessToken(ctx context.Context, id string) (string, error) {
 		// projeto em modo de teste. Tentar de novo não resolve.
 		var refused *oauth2.RetrieveError
 		if errors.As(err, &refused) && refused.ErrorCode == "invalid_grant" {
-			return "", errors.New("a sessão desta conta expirou ou foi revogada; conecte a conta de novo")
+			return "", errors.New(locales.ErrSessionExpired())
 		}
-		return "", errors.New("não foi possível renovar a sessão; confira a conexão e, se persistir, conecte essa conta novamente")
+		return "", errors.New(locales.ErrSessionRefresh())
 	}
 	if token.RefreshToken != "" && token.RefreshToken != x.token.RefreshToken {
 		if err := s.vault.Set("refresh:"+id, []byte(token.RefreshToken)); err != nil {
-			return "", fmt.Errorf("guardar a sessão renovada: %w", err)
+			return "", fmt.Errorf("%s: %w", locales.ErrSaveRenewed(), err)
 		}
 	}
 	x.token = token
