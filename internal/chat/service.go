@@ -95,6 +95,7 @@ func (s *Service) State() State {
 		Accounts:        append([]Account{}, s.config.Accounts...),
 		ActiveAccountID: s.config.ActiveAccountID,
 		Notifications:   Notifications{On: !s.config.NotificationsOff, Every: every},
+		Language:        s.config.Language,
 	}
 }
 
@@ -103,6 +104,16 @@ func (s *Service) State() State {
 var CheckIntervals = []int{15, 30, 60, 120, 300}
 
 const defaultCheckEvery = 60
+
+// SetLanguage guarda o idioma escolhido; quem valida e aplica é o desktop,
+// que sabe quais idiomas o app tem.
+func (s *Service) SetLanguage(tag string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	next := s.config
+	next.Language = tag
+	return s.saveLocked(next)
+}
 
 func (s *Service) SetNotifications(n Notifications) error {
 	if !slices.Contains(CheckIntervals, n.Every) {

@@ -47,6 +47,7 @@ function install(scenario: Scenario) {
     accounts,
     activeAccountId: accounts[0]?.id ?? "",
     notifications: { on: true, every: 60 },
+    language: "",
   };
   const listeners = new Map<string, Set<(payload: unknown) => void>>();
   const iso = (minutes: number) => new Date(Date.UTC(2026, 9, 19, 12, 0) - minutes * 60000).toISOString();
@@ -143,6 +144,9 @@ function install(scenario: Scenario) {
           return undefined;
         case "Unread":
           return [];
+        case "SetLanguage":
+          state = { ...state, language: String(args[0]) };
+          return state;
         case "SetNotifications":
           state = { ...state, notifications: args[0] as typeof state.notifications };
           bridge.state = state;

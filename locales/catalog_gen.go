@@ -828,3 +828,1555 @@ func NotifyAnAttachment() string { return In(i18n.Locale()).NotifyAnAttachment()
 func (msgs Messages) NotifyAnAttachment() string {
 	return Catalog.Format(msgs.locale, "notifyAnAttachment", nil)
 }
+
+// ErrLanguage says "choose one of the offered languages"
+// in the language the app shows.
+func ErrLanguage() string { return In(i18n.Locale()).ErrLanguage() }
+
+// ErrLanguage says "choose one of the offered languages"
+// in the language of msgs.
+func (msgs Messages) ErrLanguage() string {
+	return Catalog.Format(msgs.locale, "errLanguage", nil)
+}
+
+// Interval15 says "15 seconds"
+// in the language the app shows.
+func Interval15() string { return In(i18n.Locale()).Interval15() }
+
+// Interval15 says "15 seconds"
+// in the language of msgs.
+func (msgs Messages) Interval15() string {
+	return Catalog.Format(msgs.locale, "interval15", nil)
+}
+
+// Interval30 says "30 seconds"
+// in the language the app shows.
+func Interval30() string { return In(i18n.Locale()).Interval30() }
+
+// Interval30 says "30 seconds"
+// in the language of msgs.
+func (msgs Messages) Interval30() string {
+	return Catalog.Format(msgs.locale, "interval30", nil)
+}
+
+// Interval60 says "1 minute"
+// in the language the app shows.
+func Interval60() string { return In(i18n.Locale()).Interval60() }
+
+// Interval60 says "1 minute"
+// in the language of msgs.
+func (msgs Messages) Interval60() string {
+	return Catalog.Format(msgs.locale, "interval60", nil)
+}
+
+// Interval120 says "2 minutes"
+// in the language the app shows.
+func Interval120() string { return In(i18n.Locale()).Interval120() }
+
+// Interval120 says "2 minutes"
+// in the language of msgs.
+func (msgs Messages) Interval120() string {
+	return Catalog.Format(msgs.locale, "interval120", nil)
+}
+
+// Interval300 says "5 minutes"
+// in the language the app shows.
+func Interval300() string { return In(i18n.Locale()).Interval300() }
+
+// Interval300 says "5 minutes"
+// in the language of msgs.
+func (msgs Messages) Interval300() string {
+	return Catalog.Format(msgs.locale, "interval300", nil)
+}
+
+// ProjectFallback says "Project {number}"
+// in the language the app shows.
+func ProjectFallback(number string) string { return In(i18n.Locale()).ProjectFallback(number) }
+
+// ProjectFallback says "Project {number}"
+// in the language of msgs.
+func (msgs Messages) ProjectFallback(number string) string {
+	return Catalog.Format(msgs.locale, "projectFallback", map[string]any{"number": number})
+}
+
+// SenderApp says "App"
+// in the language the app shows.
+func SenderApp() string { return In(i18n.Locale()).SenderApp() }
+
+// SenderApp says "App"
+// in the language of msgs.
+func (msgs Messages) SenderApp() string {
+	return Catalog.Format(msgs.locale, "senderApp", nil)
+}
+
+// SenderUnavailable says "Profile unavailable"
+// in the language the app shows.
+func SenderUnavailable() string { return In(i18n.Locale()).SenderUnavailable() }
+
+// SenderUnavailable says "Profile unavailable"
+// in the language of msgs.
+func (msgs Messages) SenderUnavailable() string {
+	return Catalog.Format(msgs.locale, "senderUnavailable", nil)
+}
+
+// SenderNoName says "Person with no visible name"
+// in the language the app shows.
+func SenderNoName() string { return In(i18n.Locale()).SenderNoName() }
+
+// SenderNoName says "Person with no visible name"
+// in the language of msgs.
+func (msgs Messages) SenderNoName() string {
+	return Catalog.Format(msgs.locale, "senderNoName", nil)
+}
+
+// LoginPending says "Finish signing in in your browser"
+// in the language the app shows.
+func LoginPending() string { return In(i18n.Locale()).LoginPending() }
+
+// LoginPending says "Finish signing in in your browser"
+// in the language of msgs.
+func (msgs Messages) LoginPending() string {
+	return Catalog.Format(msgs.locale, "loginPending", nil)
+}
+
+// LinkCopied says "Link copied"
+// in the language the app shows.
+func LinkCopied() string { return In(i18n.Locale()).LinkCopied() }
+
+// LinkCopied says "Link copied"
+// in the language of msgs.
+func (msgs Messages) LinkCopied() string {
+	return Catalog.Format(msgs.locale, "linkCopied", nil)
+}
+
+// CopyLink says "Copy link"
+// in the language the app shows.
+func CopyLink() string { return In(i18n.Locale()).CopyLink() }
+
+// CopyLink says "Copy link"
+// in the language of msgs.
+func (msgs Messages) CopyLink() string {
+	return Catalog.Format(msgs.locale, "copyLink", nil)
+}
+
+// Cancel says "Cancel"
+// in the language the app shows.
+func Cancel() string { return In(i18n.Locale()).Cancel() }
+
+// Cancel says "Cancel"
+// in the language of msgs.
+func (msgs Messages) Cancel() string {
+	return Catalog.Format(msgs.locale, "cancel", nil)
+}
+
+// GuideClose says "Close guide"
+// in the language the app shows.
+func GuideClose() string { return In(i18n.Locale()).GuideClose() }
+
+// GuideClose says "Close guide"
+// in the language of msgs.
+func (msgs Messages) GuideClose() string {
+	return Catalog.Format(msgs.locale, "guideClose", nil)
+}
+
+// GuideTitle says "How to connect"
+// in the language the app shows.
+func GuideTitle() string { return In(i18n.Locale()).GuideTitle() }
+
+// GuideTitle says "How to connect"
+// in the language of msgs.
+func (msgs Messages) GuideTitle() string {
+	return Catalog.Format(msgs.locale, "guideTitle", nil)
+}
+
+// GuideStep1Title says "Create a project just for this app"
+// in the language the app shows.
+func GuideStep1Title() string { return In(i18n.Locale()).GuideStep1Title() }
+
+// GuideStep1Title says "Create a project just for this app"
+// in the language of msgs.
+func (msgs Messages) GuideStep1Title() string {
+	return Catalog.Format(msgs.locale, "guideStep1Title", nil)
+}
+
+// GuideStep1Body says "Don't reuse a project from something else: the name shown at sign-in and the access rules apply to everything that us…"
+// in the language the app shows.
+func GuideStep1Body() string { return In(i18n.Locale()).GuideStep1Body() }
+
+// GuideStep1Body says "Don't reuse a project from something else: the name shown at sign-in and the access rules apply to everything that us…"
+// in the language of msgs.
+func (msgs Messages) GuideStep1Body() string {
+	return Catalog.Format(msgs.locale, "guideStep1Body", nil)
+}
+
+// GuideCreateProject says "Create project"
+// in the language the app shows.
+func GuideCreateProject() string { return In(i18n.Locale()).GuideCreateProject() }
+
+// GuideCreateProject says "Create project"
+// in the language of msgs.
+func (msgs Messages) GuideCreateProject() string {
+	return Catalog.Format(msgs.locale, "guideCreateProject", nil)
+}
+
+// GuideStep2Title says "Enable the Google Chat API and configure the Chat app"
+// in the language the app shows.
+func GuideStep2Title() string { return In(i18n.Locale()).GuideStep2Title() }
+
+// GuideStep2Title says "Enable the Google Chat API and configure the Chat app"
+// in the language of msgs.
+func (msgs Messages) GuideStep2Title() string {
+	return Catalog.Format(msgs.locale, "guideStep2Title", nil)
+}
+
+// GuideStep2Body says "After enabling it, open the API's **Configuration** tab and fill in the name, an icon URL and a description. You don'…"
+// in the language the app shows.
+func GuideStep2Body() string { return In(i18n.Locale()).GuideStep2Body() }
+
+// GuideStep2Body says "After enabling it, open the API's **Configuration** tab and fill in the name, an icon URL and a description. You don'…"
+// in the language of msgs.
+func (msgs Messages) GuideStep2Body() string {
+	return Catalog.Format(msgs.locale, "guideStep2Body", nil)
+}
+
+// GuideEnableApi says "Enable the API"
+// in the language the app shows.
+func GuideEnableApi() string { return In(i18n.Locale()).GuideEnableApi() }
+
+// GuideEnableApi says "Enable the API"
+// in the language of msgs.
+func (msgs Messages) GuideEnableApi() string {
+	return Catalog.Format(msgs.locale, "guideEnableApi", nil)
+}
+
+// GuideConfiguration says "Configuration"
+// in the language the app shows.
+func GuideConfiguration() string { return In(i18n.Locale()).GuideConfiguration() }
+
+// GuideConfiguration says "Configuration"
+// in the language of msgs.
+func (msgs Messages) GuideConfiguration() string {
+	return Catalog.Format(msgs.locale, "guideConfiguration", nil)
+}
+
+// GuideStep3Title says "Set up the Google Auth Platform"
+// in the language the app shows.
+func GuideStep3Title() string { return In(i18n.Locale()).GuideStep3Title() }
+
+// GuideStep3Title says "Set up the Google Auth Platform"
+// in the language of msgs.
+func (msgs Messages) GuideStep3Title() string {
+	return Catalog.Format(msgs.locale, "guideStep3Title", nil)
+}
+
+// GuideBranding says "**Branding:** the name shown on the sign-in screen, such as \"Google Chat Client\", and your email."
+// in the language the app shows.
+func GuideBranding() string { return In(i18n.Locale()).GuideBranding() }
+
+// GuideBranding says "**Branding:** the name shown on the sign-in screen, such as \"Google Chat Client\", and your email."
+// in the language of msgs.
+func (msgs Messages) GuideBranding() string {
+	return Catalog.Format(msgs.locale, "guideBranding", nil)
+}
+
+// GuideAudience says "**Audience:** **Internal** only accepts accounts from the organization that owns the project, with no test list. **Ex…"
+// in the language the app shows.
+func GuideAudience() string { return In(i18n.Locale()).GuideAudience() }
+
+// GuideAudience says "**Audience:** **Internal** only accepts accounts from the organization that owns the project, with no test list. **Ex…"
+// in the language of msgs.
+func (msgs Messages) GuideAudience() string {
+	return Catalog.Format(msgs.locale, "guideAudience", nil)
+}
+
+// GuideDataAccess says "**Data access:** add the scopes below. You can paste the list into \"Manually add scopes\"."
+// in the language the app shows.
+func GuideDataAccess() string { return In(i18n.Locale()).GuideDataAccess() }
+
+// GuideDataAccess says "**Data access:** add the scopes below. You can paste the list into \"Manually add scopes\"."
+// in the language of msgs.
+func (msgs Messages) GuideDataAccess() string {
+	return Catalog.Format(msgs.locale, "guideDataAccess", nil)
+}
+
+// ScopesCopied says "Scopes copied"
+// in the language the app shows.
+func ScopesCopied() string { return In(i18n.Locale()).ScopesCopied() }
+
+// ScopesCopied says "Scopes copied"
+// in the language of msgs.
+func (msgs Messages) ScopesCopied() string {
+	return Catalog.Format(msgs.locale, "scopesCopied", nil)
+}
+
+// CopyScopes says "Copy scopes"
+// in the language the app shows.
+func CopyScopes() string { return In(i18n.Locale()).CopyScopes() }
+
+// CopyScopes says "Copy scopes"
+// in the language of msgs.
+func (msgs Messages) CopyScopes() string {
+	return Catalog.Format(msgs.locale, "copyScopes", nil)
+}
+
+// LinkBranding says "Branding"
+// in the language the app shows.
+func LinkBranding() string { return In(i18n.Locale()).LinkBranding() }
+
+// LinkBranding says "Branding"
+// in the language of msgs.
+func (msgs Messages) LinkBranding() string {
+	return Catalog.Format(msgs.locale, "linkBranding", nil)
+}
+
+// LinkAudience says "Audience"
+// in the language the app shows.
+func LinkAudience() string { return In(i18n.Locale()).LinkAudience() }
+
+// LinkAudience says "Audience"
+// in the language of msgs.
+func (msgs Messages) LinkAudience() string {
+	return Catalog.Format(msgs.locale, "linkAudience", nil)
+}
+
+// LinkDataAccess says "Data access"
+// in the language the app shows.
+func LinkDataAccess() string { return In(i18n.Locale()).LinkDataAccess() }
+
+// LinkDataAccess says "Data access"
+// in the language of msgs.
+func (msgs Messages) LinkDataAccess() string {
+	return Catalog.Format(msgs.locale, "linkDataAccess", nil)
+}
+
+// GuideStep4Title says "With an External audience: testing or production"
+// in the language the app shows.
+func GuideStep4Title() string { return In(i18n.Locale()).GuideStep4Title() }
+
+// GuideStep4Title says "With an External audience: testing or production"
+// in the language of msgs.
+func (msgs Messages) GuideStep4Title() string {
+	return Catalog.Format(msgs.locale, "guideStep4Title", nil)
+}
+
+// GuideTesting says "**In testing**, only people listed under Audience > Test users can sign in. An account outside the list sees \"has not…"
+// in the language the app shows.
+func GuideTesting() string { return In(i18n.Locale()).GuideTesting() }
+
+// GuideTesting says "**In testing**, only people listed under Audience > Test users can sign in. An account outside the list sees \"has not…"
+// in the language of msgs.
+func (msgs Messages) GuideTesting() string {
+	return Catalog.Format(msgs.locale, "guideTesting", nil)
+}
+
+// GuideProduction says "**In production** (Audience > Publish app), the session doesn't expire every week. Without verification, sign-in show…"
+// in the language the app shows.
+func GuideProduction() string { return In(i18n.Locale()).GuideProduction() }
+
+// GuideProduction says "**In production** (Audience > Publish app), the session doesn't expire every week. Without verification, sign-in show…"
+// in the language of msgs.
+func (msgs Messages) GuideProduction() string {
+	return Catalog.Format(msgs.locale, "guideProduction", nil)
+}
+
+// GuideStep5Title says "Create the client and import it here"
+// in the language the app shows.
+func GuideStep5Title() string { return In(i18n.Locale()).GuideStep5Title() }
+
+// GuideStep5Title says "Create the client and import it here"
+// in the language of msgs.
+func (msgs Messages) GuideStep5Title() string {
+	return Catalog.Format(msgs.locale, "guideStep5Title", nil)
+}
+
+// GuideStep5Body says "Under **Clients**, create a client of type **Desktop app**, download the JSON and use **Import JSON file** in setting…"
+// in the language the app shows.
+func GuideStep5Body() string { return In(i18n.Locale()).GuideStep5Body() }
+
+// GuideStep5Body says "Under **Clients**, create a client of type **Desktop app**, download the JSON and use **Import JSON file** in setting…"
+// in the language of msgs.
+func (msgs Messages) GuideStep5Body() string {
+	return Catalog.Format(msgs.locale, "guideStep5Body", nil)
+}
+
+// LinkClients says "Clients"
+// in the language the app shows.
+func LinkClients() string { return In(i18n.Locale()).LinkClients() }
+
+// LinkClients says "Clients"
+// in the language of msgs.
+func (msgs Messages) LinkClients() string {
+	return Catalog.Format(msgs.locale, "linkClients", nil)
+}
+
+// GuideStep6Title says "If a company blocks the app"
+// in the language the app shows.
+func GuideStep6Title() string { return In(i18n.Locale()).GuideStep6Title() }
+
+// GuideStep6Title says "If a company blocks the app"
+// in the language of msgs.
+func (msgs Messages) GuideStep6Title() string {
+	return Catalog.Format(msgs.locale, "guideStep6Title", nil)
+}
+
+// GuideStep6Body says "The administrator block error means that Workspace restricts third-party apps. Its admin allows the client ID in Admi…"
+// in the language the app shows.
+func GuideStep6Body() string { return In(i18n.Locale()).GuideStep6Body() }
+
+// GuideStep6Body says "The administrator block error means that Workspace restricts third-party apps. Its admin allows the client ID in Admi…"
+// in the language of msgs.
+func (msgs Messages) GuideStep6Body() string {
+	return Catalog.Format(msgs.locale, "guideStep6Body", nil)
+}
+
+// GotIt says "Got it"
+// in the language the app shows.
+func GotIt() string { return In(i18n.Locale()).GotIt() }
+
+// GotIt says "Got it"
+// in the language of msgs.
+func (msgs Messages) GotIt() string {
+	return Catalog.Format(msgs.locale, "gotIt", nil)
+}
+
+// SkipToConversation says "Skip to conversation"
+// in the language the app shows.
+func SkipToConversation() string { return In(i18n.Locale()).SkipToConversation() }
+
+// SkipToConversation says "Skip to conversation"
+// in the language of msgs.
+func (msgs Messages) SkipToConversation() string {
+	return Catalog.Format(msgs.locale, "skipToConversation", nil)
+}
+
+// GoogleAccounts says "Google accounts"
+// in the language the app shows.
+func GoogleAccounts() string { return In(i18n.Locale()).GoogleAccounts() }
+
+// GoogleAccounts says "Google accounts"
+// in the language of msgs.
+func (msgs Messages) GoogleAccounts() string {
+	return Catalog.Format(msgs.locale, "googleAccounts", nil)
+}
+
+// SwitchToAccount says "{count, plural, =0 {Use {email}} one {Use {email}, 1 unread} other {Use {email}, # unread}}"
+// in the language the app shows.
+func SwitchToAccount(count int, email string) string {
+	return In(i18n.Locale()).SwitchToAccount(count, email)
+}
+
+// SwitchToAccount says "{count, plural, =0 {Use {email}} one {Use {email}, 1 unread} other {Use {email}, # unread}}"
+// in the language of msgs.
+func (msgs Messages) SwitchToAccount(count int, email string) string {
+	return Catalog.Format(msgs.locale, "switchToAccount", map[string]any{"count": count, "email": email})
+}
+
+// AddGoogleAccount says "Add Google account"
+// in the language the app shows.
+func AddGoogleAccount() string { return In(i18n.Locale()).AddGoogleAccount() }
+
+// AddGoogleAccount says "Add Google account"
+// in the language of msgs.
+func (msgs Messages) AddGoogleAccount() string {
+	return Catalog.Format(msgs.locale, "addGoogleAccount", nil)
+}
+
+// LightThemeAction says "Use light theme"
+// in the language the app shows.
+func LightThemeAction() string { return In(i18n.Locale()).LightThemeAction() }
+
+// LightThemeAction says "Use light theme"
+// in the language of msgs.
+func (msgs Messages) LightThemeAction() string {
+	return Catalog.Format(msgs.locale, "lightThemeAction", nil)
+}
+
+// DarkThemeAction says "Use dark theme"
+// in the language the app shows.
+func DarkThemeAction() string { return In(i18n.Locale()).DarkThemeAction() }
+
+// DarkThemeAction says "Use dark theme"
+// in the language of msgs.
+func (msgs Messages) DarkThemeAction() string {
+	return Catalog.Format(msgs.locale, "darkThemeAction", nil)
+}
+
+// SettingsAndAccounts says "Settings and accounts"
+// in the language the app shows.
+func SettingsAndAccounts() string { return In(i18n.Locale()).SettingsAndAccounts() }
+
+// SettingsAndAccounts says "Settings and accounts"
+// in the language of msgs.
+func (msgs Messages) SettingsAndAccounts() string {
+	return Catalog.Format(msgs.locale, "settingsAndAccounts", nil)
+}
+
+// LoadingAccounts says "Loading your accounts"
+// in the language the app shows.
+func LoadingAccounts() string { return In(i18n.Locale()).LoadingAccounts() }
+
+// LoadingAccounts says "Loading your accounts"
+// in the language of msgs.
+func (msgs Messages) LoadingAccounts() string {
+	return Catalog.Format(msgs.locale, "loadingAccounts", nil)
+}
+
+// WelcomeEyebrow says "Your workspace"
+// in the language the app shows.
+func WelcomeEyebrow() string { return In(i18n.Locale()).WelcomeEyebrow() }
+
+// WelcomeEyebrow says "Your workspace"
+// in the language of msgs.
+func (msgs Messages) WelcomeEyebrow() string {
+	return Catalog.Format(msgs.locale, "welcomeEyebrow", nil)
+}
+
+// WelcomeTitle1 says "Your conversations."
+// in the language the app shows.
+func WelcomeTitle1() string { return In(i18n.Locale()).WelcomeTitle1() }
+
+// WelcomeTitle1 says "Your conversations."
+// in the language of msgs.
+func (msgs Messages) WelcomeTitle1() string {
+	return Catalog.Format(msgs.locale, "welcomeTitle1", nil)
+}
+
+// WelcomeTitle2 says "Each account in its place."
+// in the language the app shows.
+func WelcomeTitle2() string { return In(i18n.Locale()).WelcomeTitle2() }
+
+// WelcomeTitle2 says "Each account in its place."
+// in the language of msgs.
+func (msgs Messages) WelcomeTitle2() string {
+	return Catalog.Format(msgs.locale, "welcomeTitle2", nil)
+}
+
+// WelcomeDescription says "Connect your Google Workspace accounts and switch between them in the same window."
+// in the language the app shows.
+func WelcomeDescription() string { return In(i18n.Locale()).WelcomeDescription() }
+
+// WelcomeDescription says "Connect your Google Workspace accounts and switch between them in the same window."
+// in the language of msgs.
+func (msgs Messages) WelcomeDescription() string {
+	return Catalog.Format(msgs.locale, "welcomeDescription", nil)
+}
+
+// PreviewNote says "Open the desktop app to connect your accounts. This window only shows the interface."
+// in the language the app shows.
+func PreviewNote() string { return In(i18n.Locale()).PreviewNote() }
+
+// PreviewNote says "Open the desktop app to connect your accounts. This window only shows the interface."
+// in the language of msgs.
+func (msgs Messages) PreviewNote() string {
+	return Catalog.Format(msgs.locale, "previewNote", nil)
+}
+
+// ConnectGoogleAccount says "Connect Google account"
+// in the language the app shows.
+func ConnectGoogleAccount() string { return In(i18n.Locale()).ConnectGoogleAccount() }
+
+// ConnectGoogleAccount says "Connect Google account"
+// in the language of msgs.
+func (msgs Messages) ConnectGoogleAccount() string {
+	return Catalog.Format(msgs.locale, "connectGoogleAccount", nil)
+}
+
+// ImportGoogleCredentials says "Import Google credentials"
+// in the language the app shows.
+func ImportGoogleCredentials() string { return In(i18n.Locale()).ImportGoogleCredentials() }
+
+// ImportGoogleCredentials says "Import Google credentials"
+// in the language of msgs.
+func (msgs Messages) ImportGoogleCredentials() string {
+	return Catalog.Format(msgs.locale, "importGoogleCredentials", nil)
+}
+
+// HowToConnect says "How to connect"
+// in the language the app shows.
+func HowToConnect() string { return In(i18n.Locale()).HowToConnect() }
+
+// HowToConnect says "How to connect"
+// in the language of msgs.
+func (msgs Messages) HowToConnect() string {
+	return Catalog.Format(msgs.locale, "howToConnect", nil)
+}
+
+// WelcomeNoProject says "First, import the OAuth file of your Google Cloud project."
+// in the language the app shows.
+func WelcomeNoProject() string { return In(i18n.Locale()).WelcomeNoProject() }
+
+// WelcomeNoProject says "First, import the OAuth file of your Google Cloud project."
+// in the language of msgs.
+func (msgs Messages) WelcomeNoProject() string {
+	return Catalog.Format(msgs.locale, "welcomeNoProject", nil)
+}
+
+// WelcomeManyProjects says "{count} projects imported. In settings you choose which one each account uses."
+// in the language the app shows.
+func WelcomeManyProjects(count int) string { return In(i18n.Locale()).WelcomeManyProjects(count) }
+
+// WelcomeManyProjects says "{count} projects imported. In settings you choose which one each account uses."
+// in the language of msgs.
+func (msgs Messages) WelcomeManyProjects(count int) string {
+	return Catalog.Format(msgs.locale, "welcomeManyProjects", map[string]any{"count": count})
+}
+
+// WelcomeOneProject says "Project configured. Sign-in opens in your browser."
+// in the language the app shows.
+func WelcomeOneProject() string { return In(i18n.Locale()).WelcomeOneProject() }
+
+// WelcomeOneProject says "Project configured. Sign-in opens in your browser."
+// in the language of msgs.
+func (msgs Messages) WelcomeOneProject() string {
+	return Catalog.Format(msgs.locale, "welcomeOneProject", nil)
+}
+
+// WelcomeTagline says "Chat for work"
+// in the language the app shows.
+func WelcomeTagline() string { return In(i18n.Locale()).WelcomeTagline() }
+
+// WelcomeTagline says "Chat for work"
+// in the language of msgs.
+func (msgs Messages) WelcomeTagline() string {
+	return Catalog.Format(msgs.locale, "welcomeTagline", nil)
+}
+
+// CloseSettings says "Close settings"
+// in the language the app shows.
+func CloseSettings() string { return In(i18n.Locale()).CloseSettings() }
+
+// CloseSettings says "Close settings"
+// in the language of msgs.
+func (msgs Messages) CloseSettings() string {
+	return Catalog.Format(msgs.locale, "closeSettings", nil)
+}
+
+// SettingsTitle says "Settings"
+// in the language the app shows.
+func SettingsTitle() string { return In(i18n.Locale()).SettingsTitle() }
+
+// SettingsTitle says "Settings"
+// in the language of msgs.
+func (msgs Messages) SettingsTitle() string {
+	return Catalog.Format(msgs.locale, "settingsTitle", nil)
+}
+
+// AccountsDescription says "Accounts keep separate sessions. Removing an account ends its session in this app."
+// in the language the app shows.
+func AccountsDescription() string { return In(i18n.Locale()).AccountsDescription() }
+
+// AccountsDescription says "Accounts keep separate sessions. Removing an account ends its session in this app."
+// in the language of msgs.
+func (msgs Messages) AccountsDescription() string {
+	return Catalog.Format(msgs.locale, "accountsDescription", nil)
+}
+
+// ProjectRemoved says "project removed"
+// in the language the app shows.
+func ProjectRemoved() string { return In(i18n.Locale()).ProjectRemoved() }
+
+// ProjectRemoved says "project removed"
+// in the language of msgs.
+func (msgs Messages) ProjectRemoved() string {
+	return Catalog.Format(msgs.locale, "projectRemoved", nil)
+}
+
+// Removing says "Removing…"
+// in the language the app shows.
+func Removing() string { return In(i18n.Locale()).Removing() }
+
+// Removing says "Removing…"
+// in the language of msgs.
+func (msgs Messages) Removing() string {
+	return Catalog.Format(msgs.locale, "removing", nil)
+}
+
+// Remove says "Remove"
+// in the language the app shows.
+func Remove() string { return In(i18n.Locale()).Remove() }
+
+// Remove says "Remove"
+// in the language of msgs.
+func (msgs Messages) Remove() string {
+	return Catalog.Format(msgs.locale, "remove", nil)
+}
+
+// HintNoProject says "Import a project's JSON file, just below, to enable sign-in."
+// in the language the app shows.
+func HintNoProject() string { return In(i18n.Locale()).HintNoProject() }
+
+// HintNoProject says "Import a project's JSON file, just below, to enable sign-in."
+// in the language of msgs.
+func (msgs Messages) HintNoProject() string {
+	return Catalog.Format(msgs.locale, "hintNoProject", nil)
+}
+
+// HintManyProjects says "To add an account, choose its project in the list below."
+// in the language the app shows.
+func HintManyProjects() string { return In(i18n.Locale()).HintManyProjects() }
+
+// HintManyProjects says "To add an account, choose its project in the list below."
+// in the language of msgs.
+func (msgs Messages) HintManyProjects() string {
+	return Catalog.Format(msgs.locale, "hintManyProjects", nil)
+}
+
+// ProjectsHeading says "Google Cloud projects"
+// in the language the app shows.
+func ProjectsHeading() string { return In(i18n.Locale()).ProjectsHeading() }
+
+// ProjectsHeading says "Google Cloud projects"
+// in the language of msgs.
+func (msgs Messages) ProjectsHeading() string {
+	return Catalog.Format(msgs.locale, "projectsHeading", nil)
+}
+
+// ProjectsDescription says "Each imported JSON is a project, and each account signs in through the project you choose. To create one, follow the …"
+// in the language the app shows.
+func ProjectsDescription() string { return In(i18n.Locale()).ProjectsDescription() }
+
+// ProjectsDescription says "Each imported JSON is a project, and each account signs in through the project you choose. To create one, follow the …"
+// in the language of msgs.
+func (msgs Messages) ProjectsDescription() string {
+	return Catalog.Format(msgs.locale, "projectsDescription", nil)
+}
+
+// OpenGuide says "How to connect: step by step"
+// in the language the app shows.
+func OpenGuide() string { return In(i18n.Locale()).OpenGuide() }
+
+// OpenGuide says "How to connect: step by step"
+// in the language of msgs.
+func (msgs Messages) OpenGuide() string {
+	return Catalog.Format(msgs.locale, "openGuide", nil)
+}
+
+// ProjectAccounts says "{count, plural, =0 {No accounts} one {1 account} other {# accounts}}"
+// in the language the app shows.
+func ProjectAccounts(count int) string { return In(i18n.Locale()).ProjectAccounts(count) }
+
+// ProjectAccounts says "{count, plural, =0 {No accounts} one {1 account} other {# accounts}}"
+// in the language of msgs.
+func (msgs Messages) ProjectAccounts(count int) string {
+	return Catalog.Format(msgs.locale, "projectAccounts", map[string]any{"count": count})
+}
+
+// AddAccount says "Add account"
+// in the language the app shows.
+func AddAccount() string { return In(i18n.Locale()).AddAccount() }
+
+// AddAccount says "Add account"
+// in the language of msgs.
+func (msgs Messages) AddAccount() string {
+	return Catalog.Format(msgs.locale, "addAccount", nil)
+}
+
+// RemoveProjectFirst says "Remove this project's accounts first"
+// in the language the app shows.
+func RemoveProjectFirst() string { return In(i18n.Locale()).RemoveProjectFirst() }
+
+// RemoveProjectFirst says "Remove this project's accounts first"
+// in the language of msgs.
+func (msgs Messages) RemoveProjectFirst() string {
+	return Catalog.Format(msgs.locale, "removeProjectFirst", nil)
+}
+
+// RemoveProject says "Remove this project"
+// in the language the app shows.
+func RemoveProject() string { return In(i18n.Locale()).RemoveProject() }
+
+// RemoveProject says "Remove this project"
+// in the language of msgs.
+func (msgs Messages) RemoveProject() string {
+	return Catalog.Format(msgs.locale, "removeProject", nil)
+}
+
+// Importing says "Importing…"
+// in the language the app shows.
+func Importing() string { return In(i18n.Locale()).Importing() }
+
+// Importing says "Importing…"
+// in the language of msgs.
+func (msgs Messages) Importing() string {
+	return Catalog.Format(msgs.locale, "importing", nil)
+}
+
+// ImportAnotherJson says "Import another JSON"
+// in the language the app shows.
+func ImportAnotherJson() string { return In(i18n.Locale()).ImportAnotherJson() }
+
+// ImportAnotherJson says "Import another JSON"
+// in the language of msgs.
+func (msgs Messages) ImportAnotherJson() string {
+	return Catalog.Format(msgs.locale, "importAnotherJson", nil)
+}
+
+// ImportJson says "Import JSON file"
+// in the language the app shows.
+func ImportJson() string { return In(i18n.Locale()).ImportJson() }
+
+// ImportJson says "Import JSON file"
+// in the language of msgs.
+func (msgs Messages) ImportJson() string {
+	return Catalog.Format(msgs.locale, "importJson", nil)
+}
+
+// OpenGoogleCloud says "Open Google Cloud"
+// in the language the app shows.
+func OpenGoogleCloud() string { return In(i18n.Locale()).OpenGoogleCloud() }
+
+// OpenGoogleCloud says "Open Google Cloud"
+// in the language of msgs.
+func (msgs Messages) OpenGoogleCloud() string {
+	return Catalog.Format(msgs.locale, "openGoogleCloud", nil)
+}
+
+// ProjectsAdminNote says "Sign-in may depend on the Workspace administrator allowing the app. Credentials are kept in the system keyring."
+// in the language the app shows.
+func ProjectsAdminNote() string { return In(i18n.Locale()).ProjectsAdminNote() }
+
+// ProjectsAdminNote says "Sign-in may depend on the Workspace administrator allowing the app. Credentials are kept in the system keyring."
+// in the language of msgs.
+func (msgs Messages) ProjectsAdminNote() string {
+	return Catalog.Format(msgs.locale, "projectsAdminNote", nil)
+}
+
+// NotificationsHeading says "Notifications"
+// in the language the app shows.
+func NotificationsHeading() string { return In(i18n.Locale()).NotificationsHeading() }
+
+// NotificationsHeading says "Notifications"
+// in the language of msgs.
+func (msgs Messages) NotificationsHeading() string {
+	return Catalog.Format(msgs.locale, "notificationsHeading", nil)
+}
+
+// NotificationsDescription says "The app looks for new messages in every account and alerts you through the system, even with the window closed (it st…"
+// in the language the app shows.
+func NotificationsDescription() string { return In(i18n.Locale()).NotificationsDescription() }
+
+// NotificationsDescription says "The app looks for new messages in every account and alerts you through the system, even with the window closed (it st…"
+// in the language of msgs.
+func (msgs Messages) NotificationsDescription() string {
+	return Catalog.Format(msgs.locale, "notificationsDescription", nil)
+}
+
+// NotifyToggle says "Alert me about new messages"
+// in the language the app shows.
+func NotifyToggle() string { return In(i18n.Locale()).NotifyToggle() }
+
+// NotifyToggle says "Alert me about new messages"
+// in the language of msgs.
+func (msgs Messages) NotifyToggle() string {
+	return Catalog.Format(msgs.locale, "notifyToggle", nil)
+}
+
+// CheckEvery says "Check every"
+// in the language the app shows.
+func CheckEvery() string { return In(i18n.Locale()).CheckEvery() }
+
+// CheckEvery says "Check every"
+// in the language of msgs.
+func (msgs Messages) CheckEvery() string {
+	return Catalog.Format(msgs.locale, "checkEvery", nil)
+}
+
+// Appearance says "Appearance"
+// in the language the app shows.
+func Appearance() string { return In(i18n.Locale()).Appearance() }
+
+// Appearance says "Appearance"
+// in the language of msgs.
+func (msgs Messages) Appearance() string {
+	return Catalog.Format(msgs.locale, "appearance", nil)
+}
+
+// FollowSystem says "Follow the system"
+// in the language the app shows.
+func FollowSystem() string { return In(i18n.Locale()).FollowSystem() }
+
+// FollowSystem says "Follow the system"
+// in the language of msgs.
+func (msgs Messages) FollowSystem() string {
+	return Catalog.Format(msgs.locale, "followSystem", nil)
+}
+
+// Light says "Light"
+// in the language the app shows.
+func Light() string { return In(i18n.Locale()).Light() }
+
+// Light says "Light"
+// in the language of msgs.
+func (msgs Messages) Light() string {
+	return Catalog.Format(msgs.locale, "light", nil)
+}
+
+// Dark says "Dark"
+// in the language the app shows.
+func Dark() string { return In(i18n.Locale()).Dark() }
+
+// Dark says "Dark"
+// in the language of msgs.
+func (msgs Messages) Dark() string {
+	return Catalog.Format(msgs.locale, "dark", nil)
+}
+
+// Language says "Language"
+// in the language the app shows.
+func Language() string { return In(i18n.Locale()).Language() }
+
+// Language says "Language"
+// in the language of msgs.
+func (msgs Messages) Language() string {
+	return Catalog.Format(msgs.locale, "language", nil)
+}
+
+// Done says "Done"
+// in the language the app shows.
+func Done() string { return In(i18n.Locale()).Done() }
+
+// Done says "Done"
+// in the language of msgs.
+func (msgs Messages) Done() string {
+	return Catalog.Format(msgs.locale, "done", nil)
+}
+
+// ConversationsOfAccount says "Conversations of the selected account"
+// in the language the app shows.
+func ConversationsOfAccount() string { return In(i18n.Locale()).ConversationsOfAccount() }
+
+// ConversationsOfAccount says "Conversations of the selected account"
+// in the language of msgs.
+func (msgs Messages) ConversationsOfAccount() string {
+	return Catalog.Format(msgs.locale, "conversationsOfAccount", nil)
+}
+
+// ChatHeading says "Chat"
+// in the language the app shows.
+func ChatHeading() string { return In(i18n.Locale()).ChatHeading() }
+
+// ChatHeading says "Chat"
+// in the language of msgs.
+func (msgs Messages) ChatHeading() string {
+	return Catalog.Format(msgs.locale, "chatHeading", nil)
+}
+
+// RefreshConversations says "Refresh conversation list"
+// in the language the app shows.
+func RefreshConversations() string { return In(i18n.Locale()).RefreshConversations() }
+
+// RefreshConversations says "Refresh conversation list"
+// in the language of msgs.
+func (msgs Messages) RefreshConversations() string {
+	return Catalog.Format(msgs.locale, "refreshConversations", nil)
+}
+
+// FilterPlaceholder says "Filter conversations"
+// in the language the app shows.
+func FilterPlaceholder() string { return In(i18n.Locale()).FilterPlaceholder() }
+
+// FilterPlaceholder says "Filter conversations"
+// in the language of msgs.
+func (msgs Messages) FilterPlaceholder() string {
+	return Catalog.Format(msgs.locale, "filterPlaceholder", nil)
+}
+
+// FilterLabel says "Filter loaded conversations"
+// in the language the app shows.
+func FilterLabel() string { return In(i18n.Locale()).FilterLabel() }
+
+// FilterLabel says "Filter loaded conversations"
+// in the language of msgs.
+func (msgs Messages) FilterLabel() string {
+	return Catalog.Format(msgs.locale, "filterLabel", nil)
+}
+
+// ConversationType says "Conversation type"
+// in the language the app shows.
+func ConversationType() string { return In(i18n.Locale()).ConversationType() }
+
+// ConversationType says "Conversation type"
+// in the language of msgs.
+func (msgs Messages) ConversationType() string {
+	return Catalog.Format(msgs.locale, "conversationType", nil)
+}
+
+// FilterAll says "All"
+// in the language the app shows.
+func FilterAll() string { return In(i18n.Locale()).FilterAll() }
+
+// FilterAll says "All"
+// in the language of msgs.
+func (msgs Messages) FilterAll() string {
+	return Catalog.Format(msgs.locale, "filterAll", nil)
+}
+
+// FilterChats says "Chats"
+// in the language the app shows.
+func FilterChats() string { return In(i18n.Locale()).FilterChats() }
+
+// FilterChats says "Chats"
+// in the language of msgs.
+func (msgs Messages) FilterChats() string {
+	return Catalog.Format(msgs.locale, "filterChats", nil)
+}
+
+// FilterSpaces says "Spaces"
+// in the language the app shows.
+func FilterSpaces() string { return In(i18n.Locale()).FilterSpaces() }
+
+// FilterSpaces says "Spaces"
+// in the language of msgs.
+func (msgs Messages) FilterSpaces() string {
+	return Catalog.Format(msgs.locale, "filterSpaces", nil)
+}
+
+// TryAgain says "Try again"
+// in the language the app shows.
+func TryAgain() string { return In(i18n.Locale()).TryAgain() }
+
+// TryAgain says "Try again"
+// in the language of msgs.
+func (msgs Messages) TryAgain() string {
+	return Catalog.Format(msgs.locale, "tryAgain", nil)
+}
+
+// SearchingConversations says "Loading conversations"
+// in the language the app shows.
+func SearchingConversations() string { return In(i18n.Locale()).SearchingConversations() }
+
+// SearchingConversations says "Loading conversations"
+// in the language of msgs.
+func (msgs Messages) SearchingConversations() string {
+	return Catalog.Format(msgs.locale, "searchingConversations", nil)
+}
+
+// TypeSpace says "Space"
+// in the language the app shows.
+func TypeSpace() string { return In(i18n.Locale()).TypeSpace() }
+
+// TypeSpace says "Space"
+// in the language of msgs.
+func (msgs Messages) TypeSpace() string {
+	return Catalog.Format(msgs.locale, "typeSpace", nil)
+}
+
+// TypeGroup says "Group chat"
+// in the language the app shows.
+func TypeGroup() string { return In(i18n.Locale()).TypeGroup() }
+
+// TypeGroup says "Group chat"
+// in the language of msgs.
+func (msgs Messages) TypeGroup() string {
+	return Catalog.Format(msgs.locale, "typeGroup", nil)
+}
+
+// TypeDirect says "Direct message"
+// in the language the app shows.
+func TypeDirect() string { return In(i18n.Locale()).TypeDirect() }
+
+// TypeDirect says "Direct message"
+// in the language of msgs.
+func (msgs Messages) TypeDirect() string {
+	return Catalog.Format(msgs.locale, "typeDirect", nil)
+}
+
+// UnreadSuffix says "unread"
+// in the language the app shows.
+func UnreadSuffix() string { return In(i18n.Locale()).UnreadSuffix() }
+
+// UnreadSuffix says "unread"
+// in the language of msgs.
+func (msgs Messages) UnreadSuffix() string {
+	return Catalog.Format(msgs.locale, "unreadSuffix", nil)
+}
+
+// NoMatch says "No conversation matches the filter."
+// in the language the app shows.
+func NoMatch() string { return In(i18n.Locale()).NoMatch() }
+
+// NoMatch says "No conversation matches the filter."
+// in the language of msgs.
+func (msgs Messages) NoMatch() string {
+	return Catalog.Format(msgs.locale, "noMatch", nil)
+}
+
+// NoConversations says "No conversations found in this account. Start one in Google Chat and refresh the list."
+// in the language the app shows.
+func NoConversations() string { return In(i18n.Locale()).NoConversations() }
+
+// NoConversations says "No conversations found in this account. Start one in Google Chat and refresh the list."
+// in the language of msgs.
+func (msgs Messages) NoConversations() string {
+	return Catalog.Format(msgs.locale, "noConversations", nil)
+}
+
+// Loading says "Loading…"
+// in the language the app shows.
+func Loading() string { return In(i18n.Locale()).Loading() }
+
+// Loading says "Loading…"
+// in the language of msgs.
+func (msgs Messages) Loading() string {
+	return Catalog.Format(msgs.locale, "loading", nil)
+}
+
+// MoreConversations says "More conversations"
+// in the language the app shows.
+func MoreConversations() string { return In(i18n.Locale()).MoreConversations() }
+
+// MoreConversations says "More conversations"
+// in the language of msgs.
+func (msgs Messages) MoreConversations() string {
+	return Catalog.Format(msgs.locale, "moreConversations", nil)
+}
+
+// ActiveAccount says "Active account"
+// in the language the app shows.
+func ActiveAccount() string { return In(i18n.Locale()).ActiveAccount() }
+
+// ActiveAccount says "Active account"
+// in the language of msgs.
+func (msgs Messages) ActiveAccount() string {
+	return Catalog.Format(msgs.locale, "activeAccount", nil)
+}
+
+// ConversationHistory says "Conversation history"
+// in the language the app shows.
+func ConversationHistory() string { return In(i18n.Locale()).ConversationHistory() }
+
+// ConversationHistory says "Conversation history"
+// in the language of msgs.
+func (msgs Messages) ConversationHistory() string {
+	return Catalog.Format(msgs.locale, "conversationHistory", nil)
+}
+
+// BackToConversations says "Back to conversations"
+// in the language the app shows.
+func BackToConversations() string { return In(i18n.Locale()).BackToConversations() }
+
+// BackToConversations says "Back to conversations"
+// in the language of msgs.
+func (msgs Messages) BackToConversations() string {
+	return Catalog.Format(msgs.locale, "backToConversations", nil)
+}
+
+// OpenInGoogleChat says "Open this conversation in Google Chat"
+// in the language the app shows.
+func OpenInGoogleChat() string { return In(i18n.Locale()).OpenInGoogleChat() }
+
+// OpenInGoogleChat says "Open this conversation in Google Chat"
+// in the language of msgs.
+func (msgs Messages) OpenInGoogleChat() string {
+	return Catalog.Format(msgs.locale, "openInGoogleChat", nil)
+}
+
+// Thread says "Thread"
+// in the language the app shows.
+func Thread() string { return In(i18n.Locale()).Thread() }
+
+// Thread says "Thread"
+// in the language of msgs.
+func (msgs Messages) Thread() string {
+	return Catalog.Format(msgs.locale, "thread", nil)
+}
+
+// CloseThread says "Close thread"
+// in the language the app shows.
+func CloseThread() string { return In(i18n.Locale()).CloseThread() }
+
+// CloseThread says "Close thread"
+// in the language of msgs.
+func (msgs Messages) CloseThread() string {
+	return Catalog.Format(msgs.locale, "closeThread", nil)
+}
+
+// ChooseTitle says "One conversation at a time"
+// in the language the app shows.
+func ChooseTitle() string { return In(i18n.Locale()).ChooseTitle() }
+
+// ChooseTitle says "One conversation at a time"
+// in the language of msgs.
+func (msgs Messages) ChooseTitle() string {
+	return Catalog.Format(msgs.locale, "chooseTitle", nil)
+}
+
+// ChooseBody says "Pick a conversation on the left to read and reply."
+// in the language the app shows.
+func ChooseBody() string { return In(i18n.Locale()).ChooseBody() }
+
+// ChooseBody says "Pick a conversation on the left to read and reply."
+// in the language of msgs.
+func (msgs Messages) ChooseBody() string {
+	return Catalog.Format(msgs.locale, "chooseBody", nil)
+}
+
+// UsingAccount says "You're using {email}"
+// in the language the app shows.
+func UsingAccount(email string) string { return In(i18n.Locale()).UsingAccount(email) }
+
+// UsingAccount says "You're using {email}"
+// in the language of msgs.
+func (msgs Messages) UsingAccount(email string) string {
+	return Catalog.Format(msgs.locale, "usingAccount", map[string]any{"email": email})
+}
+
+// SpaceFallback says "Space {id}"
+// in the language the app shows.
+func SpaceFallback(id string) string { return In(i18n.Locale()).SpaceFallback(id) }
+
+// SpaceFallback says "Space {id}"
+// in the language of msgs.
+func (msgs Messages) SpaceFallback(id string) string {
+	return Catalog.Format(msgs.locale, "spaceFallback", map[string]any{"id": id})
+}
+
+// ConversationFallback says "Conversation {id}"
+// in the language the app shows.
+func ConversationFallback(id string) string { return In(i18n.Locale()).ConversationFallback(id) }
+
+// ConversationFallback says "Conversation {id}"
+// in the language of msgs.
+func (msgs Messages) ConversationFallback(id string) string {
+	return Catalog.Format(msgs.locale, "conversationFallback", map[string]any{"id": id})
+}
+
+// ThreadMessages says "Thread messages"
+// in the language the app shows.
+func ThreadMessages() string { return In(i18n.Locale()).ThreadMessages() }
+
+// ThreadMessages says "Thread messages"
+// in the language of msgs.
+func (msgs Messages) ThreadMessages() string {
+	return Catalog.Format(msgs.locale, "threadMessages", nil)
+}
+
+// MessagesLabel says "Messages"
+// in the language the app shows.
+func MessagesLabel() string { return In(i18n.Locale()).MessagesLabel() }
+
+// MessagesLabel says "Messages"
+// in the language of msgs.
+func (msgs Messages) MessagesLabel() string {
+	return Catalog.Format(msgs.locale, "messagesLabel", nil)
+}
+
+// LoadOlder says "Load earlier messages"
+// in the language the app shows.
+func LoadOlder() string { return In(i18n.Locale()).LoadOlder() }
+
+// LoadOlder says "Load earlier messages"
+// in the language of msgs.
+func (msgs Messages) LoadOlder() string {
+	return Catalog.Format(msgs.locale, "loadOlder", nil)
+}
+
+// LoadingMessages says "Loading messages"
+// in the language the app shows.
+func LoadingMessages() string { return In(i18n.Locale()).LoadingMessages() }
+
+// LoadingMessages says "Loading messages"
+// in the language of msgs.
+func (msgs Messages) LoadingMessages() string {
+	return Catalog.Format(msgs.locale, "loadingMessages", nil)
+}
+
+// ThreadEmpty says "This thread has no messages yet"
+// in the language the app shows.
+func ThreadEmpty() string { return In(i18n.Locale()).ThreadEmpty() }
+
+// ThreadEmpty says "This thread has no messages yet"
+// in the language of msgs.
+func (msgs Messages) ThreadEmpty() string {
+	return Catalog.Format(msgs.locale, "threadEmpty", nil)
+}
+
+// ConversationStarts says "The conversation starts here"
+// in the language the app shows.
+func ConversationStarts() string { return In(i18n.Locale()).ConversationStarts() }
+
+// ConversationStarts says "The conversation starts here"
+// in the language of msgs.
+func (msgs Messages) ConversationStarts() string {
+	return Catalog.Format(msgs.locale, "conversationStarts", nil)
+}
+
+// WriteBelow says "Write a message below."
+// in the language the app shows.
+func WriteBelow() string { return In(i18n.Locale()).WriteBelow() }
+
+// WriteBelow says "Write a message below."
+// in the language of msgs.
+func (msgs Messages) WriteBelow() string {
+	return Catalog.Format(msgs.locale, "writeBelow", nil)
+}
+
+// InThread says "In thread"
+// in the language the app shows.
+func InThread() string { return In(i18n.Locale()).InThread() }
+
+// InThread says "In thread"
+// in the language of msgs.
+func (msgs Messages) InThread() string {
+	return Catalog.Format(msgs.locale, "inThread", nil)
+}
+
+// Unsupported says "Content available in Google Chat"
+// in the language the app shows.
+func Unsupported() string { return In(i18n.Locale()).Unsupported() }
+
+// Unsupported says "Content available in Google Chat"
+// in the language of msgs.
+func (msgs Messages) Unsupported() string {
+	return Catalog.Format(msgs.locale, "unsupported", nil)
+}
+
+// OpenThread says "Open thread"
+// in the language the app shows.
+func OpenThread() string { return In(i18n.Locale()).OpenThread() }
+
+// OpenThread says "Open thread"
+// in the language of msgs.
+func (msgs Messages) OpenThread() string {
+	return Catalog.Format(msgs.locale, "openThread", nil)
+}
+
+// FileFallback says "File"
+// in the language the app shows.
+func FileFallback() string { return In(i18n.Locale()).FileFallback() }
+
+// FileFallback says "File"
+// in the language of msgs.
+func (msgs Messages) FileFallback() string {
+	return Catalog.Format(msgs.locale, "fileFallback", nil)
+}
+
+// OpenInDrive says "Open in Drive"
+// in the language the app shows.
+func OpenInDrive() string { return In(i18n.Locale()).OpenInDrive() }
+
+// OpenInDrive says "Open in Drive"
+// in the language of msgs.
+func (msgs Messages) OpenInDrive() string {
+	return Catalog.Format(msgs.locale, "openInDrive", nil)
+}
+
+// SavedShowInFolder says "Saved · show in folder"
+// in the language the app shows.
+func SavedShowInFolder() string { return In(i18n.Locale()).SavedShowInFolder() }
+
+// SavedShowInFolder says "Saved · show in folder"
+// in the language of msgs.
+func (msgs Messages) SavedShowInFolder() string {
+	return Catalog.Format(msgs.locale, "savedShowInFolder", nil)
+}
+
+// DownloadFile says "Download {name}"
+// in the language the app shows.
+func DownloadFile(name string) string { return In(i18n.Locale()).DownloadFile(name) }
+
+// DownloadFile says "Download {name}"
+// in the language of msgs.
+func (msgs Messages) DownloadFile(name string) string {
+	return Catalog.Format(msgs.locale, "downloadFile", map[string]any{"name": name})
+}
+
+// Downloading says "Downloading…"
+// in the language the app shows.
+func Downloading() string { return In(i18n.Locale()).Downloading() }
+
+// Downloading says "Downloading…"
+// in the language of msgs.
+func (msgs Messages) Downloading() string {
+	return Catalog.Format(msgs.locale, "downloading", nil)
+}
+
+// DownloadFailed says "Failed; try again"
+// in the language the app shows.
+func DownloadFailed() string { return In(i18n.Locale()).DownloadFailed() }
+
+// DownloadFailed says "Failed; try again"
+// in the language of msgs.
+func (msgs Messages) DownloadFailed() string {
+	return Catalog.Format(msgs.locale, "downloadFailed", nil)
+}
+
+// Download says "Download"
+// in the language the app shows.
+func Download() string { return In(i18n.Locale()).Download() }
+
+// Download says "Download"
+// in the language of msgs.
+func (msgs Messages) Download() string {
+	return Catalog.Format(msgs.locale, "download", nil)
+}
+
+// OpenAttachmentInChat says "Open in Google Chat"
+// in the language the app shows.
+func OpenAttachmentInChat() string { return In(i18n.Locale()).OpenAttachmentInChat() }
+
+// OpenAttachmentInChat says "Open in Google Chat"
+// in the language of msgs.
+func (msgs Messages) OpenAttachmentInChat() string {
+	return Catalog.Format(msgs.locale, "openAttachmentInChat", nil)
+}
+
+// Sending says "Sending…"
+// in the language the app shows.
+func Sending() string { return In(i18n.Locale()).Sending() }
+
+// Sending says "Sending…"
+// in the language of msgs.
+func (msgs Messages) Sending() string {
+	return Catalog.Format(msgs.locale, "sending", nil)
+}
+
+// SendingFile says "Sending {name}…"
+// in the language the app shows.
+func SendingFile(name string) string { return In(i18n.Locale()).SendingFile(name) }
+
+// SendingFile says "Sending {name}…"
+// in the language of msgs.
+func (msgs Messages) SendingFile(name string) string {
+	return Catalog.Format(msgs.locale, "sendingFile", map[string]any{"name": name})
+}
+
+// KeptFiles says "What wasn't sent is still here; you can try sending again."
+// in the language the app shows.
+func KeptFiles() string { return In(i18n.Locale()).KeptFiles() }
+
+// KeptFiles says "What wasn't sent is still here; you can try sending again."
+// in the language of msgs.
+func (msgs Messages) KeptFiles() string {
+	return Catalog.Format(msgs.locale, "keptFiles", nil)
+}
+
+// KeptText says "Your text was kept; you can try sending again."
+// in the language the app shows.
+func KeptText() string { return In(i18n.Locale()).KeptText() }
+
+// KeptText says "Your text was kept; you can try sending again."
+// in the language of msgs.
+func (msgs Messages) KeptText() string {
+	return Catalog.Format(msgs.locale, "keptText", nil)
+}
+
+// ReplyToThread says "Reply to thread"
+// in the language the app shows.
+func ReplyToThread() string { return In(i18n.Locale()).ReplyToThread() }
+
+// ReplyToThread says "Reply to thread"
+// in the language of msgs.
+func (msgs Messages) ReplyToThread() string {
+	return Catalog.Format(msgs.locale, "replyToThread", nil)
+}
+
+// WriteMessage says "Write message"
+// in the language the app shows.
+func WriteMessage() string { return In(i18n.Locale()).WriteMessage() }
+
+// WriteMessage says "Write message"
+// in the language of msgs.
+func (msgs Messages) WriteMessage() string {
+	return Catalog.Format(msgs.locale, "writeMessage", nil)
+}
+
+// FilesToSend says "Files to send"
+// in the language the app shows.
+func FilesToSend() string { return In(i18n.Locale()).FilesToSend() }
+
+// FilesToSend says "Files to send"
+// in the language of msgs.
+func (msgs Messages) FilesToSend() string {
+	return Catalog.Format(msgs.locale, "filesToSend", nil)
+}
+
+// OverLimit says "over 200 MB, the limit"
+// in the language the app shows.
+func OverLimit() string { return In(i18n.Locale()).OverLimit() }
+
+// OverLimit says "over 200 MB, the limit"
+// in the language of msgs.
+func (msgs Messages) OverLimit() string {
+	return Catalog.Format(msgs.locale, "overLimit", nil)
+}
+
+// RemoveFile says "Remove {name}"
+// in the language the app shows.
+func RemoveFile(name string) string { return In(i18n.Locale()).RemoveFile(name) }
+
+// RemoveFile says "Remove {name}"
+// in the language of msgs.
+func (msgs Messages) RemoveFile(name string) string {
+	return Catalog.Format(msgs.locale, "removeFile", map[string]any{"name": name})
+}
+
+// ReplyPlaceholder says "Reply to thread…"
+// in the language the app shows.
+func ReplyPlaceholder() string { return In(i18n.Locale()).ReplyPlaceholder() }
+
+// ReplyPlaceholder says "Reply to thread…"
+// in the language of msgs.
+func (msgs Messages) ReplyPlaceholder() string {
+	return Catalog.Format(msgs.locale, "replyPlaceholder", nil)
+}
+
+// MessagePlaceholder says "Write a message…"
+// in the language the app shows.
+func MessagePlaceholder() string { return In(i18n.Locale()).MessagePlaceholder() }
+
+// MessagePlaceholder says "Write a message…"
+// in the language of msgs.
+func (msgs Messages) MessagePlaceholder() string {
+	return Catalog.Format(msgs.locale, "messagePlaceholder", nil)
+}
+
+// AttachFiles says "Attach files"
+// in the language the app shows.
+func AttachFiles() string { return In(i18n.Locale()).AttachFiles() }
+
+// AttachFiles says "Attach files"
+// in the language of msgs.
+func (msgs Messages) AttachFiles() string {
+	return Catalog.Format(msgs.locale, "attachFiles", nil)
+}
+
+// SendReply says "Send reply to thread"
+// in the language the app shows.
+func SendReply() string { return In(i18n.Locale()).SendReply() }
+
+// SendReply says "Send reply to thread"
+// in the language of msgs.
+func (msgs Messages) SendReply() string {
+	return Catalog.Format(msgs.locale, "sendReply", nil)
+}
+
+// SendMessage says "Send message"
+// in the language the app shows.
+func SendMessage() string { return In(i18n.Locale()).SendMessage() }
+
+// SendMessage says "Send message"
+// in the language of msgs.
+func (msgs Messages) SendMessage() string {
+	return Catalog.Format(msgs.locale, "sendMessage", nil)
+}
+
+// Send says "Send"
+// in the language the app shows.
+func Send() string { return In(i18n.Locale()).Send() }
+
+// Send says "Send"
+// in the language of msgs.
+func (msgs Messages) Send() string {
+	return Catalog.Format(msgs.locale, "send", nil)
+}
+
+// ComposerHint says "Enter to send · Shift + Enter for a new line"
+// in the language the app shows.
+func ComposerHint() string { return In(i18n.Locale()).ComposerHint() }
+
+// ComposerHint says "Enter to send · Shift + Enter for a new line"
+// in the language of msgs.
+func (msgs Messages) ComposerHint() string {
+	return Catalog.Format(msgs.locale, "composerHint", nil)
+}

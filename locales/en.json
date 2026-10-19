@@ -129,5 +129,233 @@
       }
     }
   },
-  "notifyAnAttachment": "an attachment"
+  "notifyAnAttachment": "an attachment",
+  "errLanguage": "choose one of the offered languages",
+  "interval15": "15 seconds",
+  "interval30": "30 seconds",
+  "interval60": "1 minute",
+  "interval120": "2 minutes",
+  "interval300": "5 minutes",
+  "projectFallback": "Project {number}",
+  "@projectFallback": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "senderApp": "App",
+  "senderUnavailable": "Profile unavailable",
+  "senderNoName": "Person with no visible name",
+  "loginPending": "Finish signing in in your browser",
+  "linkCopied": "Link copied",
+  "copyLink": "Copy link",
+  "cancel": "Cancel",
+  "guideClose": "Close guide",
+  "guideTitle": "How to connect",
+  "guideStep1Title": "Create a project just for this app",
+  "guideStep1Body": "Don't reuse a project from something else: the name shown at sign-in and the access rules apply to everything that uses the project. To get an **Internal** audience, create it signed in with the company account, inside its organization; a personal project only offers External.",
+  "guideCreateProject": "Create project",
+  "guideStep2Title": "Enable the Google Chat API and configure the Chat app",
+  "guideStep2Body": "After enabling it, open the API's **Configuration** tab and fill in the name, an icon URL and a description. You don't need any interactive features. Without this configuration conversations open, but sending fails with \"Google Chat app not found\".",
+  "guideEnableApi": "Enable the API",
+  "guideConfiguration": "Configuration",
+  "guideStep3Title": "Set up the Google Auth Platform",
+  "guideBranding": "**Branding:** the name shown on the sign-in screen, such as \"Google Chat Client\", and your email.",
+  "guideAudience": "**Audience:** **Internal** only accepts accounts from the organization that owns the project, with no test list. **External** accepts accounts from any company.",
+  "guideDataAccess": "**Data access:** add the scopes below. You can paste the list into \"Manually add scopes\".",
+  "scopesCopied": "Scopes copied",
+  "copyScopes": "Copy scopes",
+  "linkBranding": "Branding",
+  "linkAudience": "Audience",
+  "linkDataAccess": "Data access",
+  "guideStep4Title": "With an External audience: testing or production",
+  "guideTesting": "**In testing**, only people listed under Audience > Test users can sign in. An account outside the list sees \"has not completed the Google verification process (...) can only be accessed by developer-approved testers\". The session expires every 7 days and the account has to be added again.",
+  "guideProduction": "**In production** (Audience > Publish app), the session doesn't expire every week. Without verification, sign-in shows the unverified app screen, and the project accepts up to 100 users over its whole life. Google's documentation says a restricted scope, like `chat.messages`, needs verification in production; if sign-in is blocked, go back to testing.",
+  "guideStep5Title": "Create the client and import it here",
+  "guideStep5Body": "Under **Clients**, create a client of type **Desktop app**, download the JSON and use **Import JSON file** in settings. Then add the account. To sign in from another browser or container, use **Copy link** while sign-in is pending.",
+  "linkClients": "Clients",
+  "guideStep6Title": "If a company blocks the app",
+  "guideStep6Body": "The administrator block error means that Workspace restricts third-party apps. Its admin allows the client ID in Admin console > Security > Access and data control > API controls, marking the app as **Trusted**.",
+  "gotIt": "Got it",
+  "skipToConversation": "Skip to conversation",
+  "googleAccounts": "Google accounts",
+  "switchToAccount": "{count, plural, =0 {Use {email}} one {Use {email}, 1 unread} other {Use {email}, # unread}}",
+  "@switchToAccount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "addGoogleAccount": "Add Google account",
+  "lightThemeAction": "Use light theme",
+  "darkThemeAction": "Use dark theme",
+  "settingsAndAccounts": "Settings and accounts",
+  "loadingAccounts": "Loading your accounts",
+  "welcomeEyebrow": "Your workspace",
+  "welcomeTitle1": "Your conversations.",
+  "welcomeTitle2": "Each account in its place.",
+  "welcomeDescription": "Connect your Google Workspace accounts and switch between them in the same window.",
+  "previewNote": "Open the desktop app to connect your accounts. This window only shows the interface.",
+  "connectGoogleAccount": "Connect Google account",
+  "importGoogleCredentials": "Import Google credentials",
+  "howToConnect": "How to connect",
+  "welcomeNoProject": "First, import the OAuth file of your Google Cloud project.",
+  "welcomeManyProjects": "{count} projects imported. In settings you choose which one each account uses.",
+  "@welcomeManyProjects": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "welcomeOneProject": "Project configured. Sign-in opens in your browser.",
+  "welcomeTagline": "Chat for work",
+  "closeSettings": "Close settings",
+  "settingsTitle": "Settings",
+  "accountsDescription": "Accounts keep separate sessions. Removing an account ends its session in this app.",
+  "projectRemoved": "project removed",
+  "removing": "Removing…",
+  "remove": "Remove",
+  "hintNoProject": "Import a project's JSON file, just below, to enable sign-in.",
+  "hintManyProjects": "To add an account, choose its project in the list below.",
+  "projectsHeading": "Google Cloud projects",
+  "projectsDescription": "Each imported JSON is a project, and each account signs in through the project you choose. To create one, follow the guide.",
+  "openGuide": "How to connect: step by step",
+  "projectAccounts": "{count, plural, =0 {No accounts} one {1 account} other {# accounts}}",
+  "@projectAccounts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addAccount": "Add account",
+  "removeProjectFirst": "Remove this project's accounts first",
+  "removeProject": "Remove this project",
+  "importing": "Importing…",
+  "importAnotherJson": "Import another JSON",
+  "importJson": "Import JSON file",
+  "openGoogleCloud": "Open Google Cloud",
+  "projectsAdminNote": "Sign-in may depend on the Workspace administrator allowing the app. Credentials are kept in the system keyring.",
+  "notificationsHeading": "Notifications",
+  "notificationsDescription": "The app looks for new messages in every account and alerts you through the system, even with the window closed (it stays in the tray). The conversation you're looking at doesn't trigger alerts.",
+  "notifyToggle": "Alert me about new messages",
+  "checkEvery": "Check every",
+  "appearance": "Appearance",
+  "followSystem": "Follow the system",
+  "light": "Light",
+  "dark": "Dark",
+  "language": "Language",
+  "done": "Done",
+  "conversationsOfAccount": "Conversations of the selected account",
+  "chatHeading": "Chat",
+  "refreshConversations": "Refresh conversation list",
+  "filterPlaceholder": "Filter conversations",
+  "filterLabel": "Filter loaded conversations",
+  "conversationType": "Conversation type",
+  "filterAll": "All",
+  "filterChats": "Chats",
+  "filterSpaces": "Spaces",
+  "tryAgain": "Try again",
+  "searchingConversations": "Loading conversations",
+  "typeSpace": "Space",
+  "typeGroup": "Group chat",
+  "typeDirect": "Direct message",
+  "unreadSuffix": "unread",
+  "noMatch": "No conversation matches the filter.",
+  "noConversations": "No conversations found in this account. Start one in Google Chat and refresh the list.",
+  "loading": "Loading…",
+  "moreConversations": "More conversations",
+  "activeAccount": "Active account",
+  "conversationHistory": "Conversation history",
+  "backToConversations": "Back to conversations",
+  "openInGoogleChat": "Open this conversation in Google Chat",
+  "thread": "Thread",
+  "closeThread": "Close thread",
+  "chooseTitle": "One conversation at a time",
+  "chooseBody": "Pick a conversation on the left to read and reply.",
+  "usingAccount": "You're using {email}",
+  "@usingAccount": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "spaceFallback": "Space {id}",
+  "@spaceFallback": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "conversationFallback": "Conversation {id}",
+  "@conversationFallback": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "threadMessages": "Thread messages",
+  "messagesLabel": "Messages",
+  "loadOlder": "Load earlier messages",
+  "loadingMessages": "Loading messages",
+  "threadEmpty": "This thread has no messages yet",
+  "conversationStarts": "The conversation starts here",
+  "writeBelow": "Write a message below.",
+  "inThread": "In thread",
+  "unsupported": "Content available in Google Chat",
+  "openThread": "Open thread",
+  "fileFallback": "File",
+  "openInDrive": "Open in Drive",
+  "savedShowInFolder": "Saved · show in folder",
+  "downloadFile": "Download {name}",
+  "@downloadFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "downloading": "Downloading…",
+  "downloadFailed": "Failed; try again",
+  "download": "Download",
+  "openAttachmentInChat": "Open in Google Chat",
+  "sending": "Sending…",
+  "sendingFile": "Sending {name}…",
+  "@sendingFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "keptFiles": "What wasn't sent is still here; you can try sending again.",
+  "keptText": "Your text was kept; you can try sending again.",
+  "replyToThread": "Reply to thread",
+  "writeMessage": "Write message",
+  "filesToSend": "Files to send",
+  "overLimit": "over 200 MB, the limit",
+  "removeFile": "Remove {name}",
+  "@removeFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "replyPlaceholder": "Reply to thread…",
+  "messagePlaceholder": "Write a message…",
+  "attachFiles": "Attach files",
+  "sendReply": "Send reply to thread",
+  "sendMessage": "Send message",
+  "send": "Send",
+  "composerHint": "Enter to send · Shift + Enter for a new line"
 }

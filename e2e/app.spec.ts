@@ -501,3 +501,46 @@ test.describe("arquivos", () => {
       .toEqual(["https://drive.google.com/file/d/drive123/view"]);
   });
 });
+
+test.describe("idioma", () => {
+  test.describe("navegador em inglês", () => {
+    test.use({ locale: "en-US" });
+    test("o app segue o idioma do sistema", async ({ page }) => {
+      await withBridge(page);
+      await page.goto("/");
+      await expect(page.getByRole("button", { name: "Add Google account" })).toBeVisible();
+      await expect(page.getByPlaceholder("Filter conversations")).toBeVisible();
+      await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
+    });
+  });
+
+  test("trocar nas configurações muda a tela na hora e avisa o Go", async ({ page }) => {
+    await withBridge(page);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    await page.getByLabel("Idioma").selectOption("en");
+
+    const dialog = page.getByRole("dialog", { name: "Settings" });
+    await expect(dialog.getByRole("heading", { name: "Notifications" })).toBeVisible();
+    await expect(dialog.getByLabel("Check every").locator("option[value='60']")).toHaveText("1 minute");
+    await expect.poll(async () => (await calls(page, "SetLanguage")).map((c) => c.args[0])).toEqual(["en"]);
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+    await dialog.getByLabel("Language").selectOption("");
+    await expect(page.getByRole("dialog", { name: "Configurações" })).toBeVisible();
+    await expect.poll(async () => (await calls(page, "SetLanguage")).map((c) => c.args[0])).toEqual(["en", ""]);
+  });
+
+  test("datas e tamanhos seguem o idioma", async ({ page }) => {
+    await withBridge(page);
+    await page.goto("/");
+    await page.getByRole("button", { name: /Bruno Lima/ }).click();
+    await expect(page.locator(".date-divider").first()).toContainText("de outubro de 2026");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    await page.getByLabel("Idioma").selectOption("en");
+    await page.getByRole("button", { name: "Done" }).click();
+    await expect(page.locator(".date-divider").first()).toContainText("October");
+    await page.getByRole("button", { name: "Attach files" }).click();
+    await expect(page.getByRole("list", { name: "Files to send" })).toContainText("2.4 MB");
+  });
+});

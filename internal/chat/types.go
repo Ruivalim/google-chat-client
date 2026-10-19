@@ -22,6 +22,8 @@ type State struct {
 	Accounts        []Account     `json:"accounts"`
 	ActiveAccountID string        `json:"activeAccountId"`
 	Notifications   Notifications `json:"notifications"`
+	// Language é o idioma escolhido nas configurações; "" segue o sistema.
+	Language string `json:"language"`
 }
 
 // Notifications diz se o app procura mensagens novas e de quantos em quantos
@@ -99,8 +101,9 @@ type config struct {
 	Accounts        []Account `json:"accounts"`
 	ActiveAccountID string    `json:"activeAccountId"`
 	// Zero nos dois quer dizer o padrão: ligado, a cada minuto.
-	NotificationsOff bool `json:"notificationsOff,omitempty"`
-	CheckEvery       int  `json:"checkEvery,omitempty"`
+	NotificationsOff bool   `json:"notificationsOff,omitempty"`
+	CheckEvery       int    `json:"checkEvery,omitempty"`
+	Language         string `json:"language,omitempty"`
 	// LegacyClientID é o formato antigo, de um projeto só. Open migra.
 	LegacyClientID string `json:"clientId,omitempty"`
 }

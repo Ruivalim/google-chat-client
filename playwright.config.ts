@@ -8,7 +8,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
-  use: { baseURL: "http://127.0.0.1:4173", trace: "retain-on-failure" },
+  // Os testes conferem os textos em português; o de idioma troca para inglês.
+  use: { baseURL: "http://127.0.0.1:4173", trace: "retain-on-failure", locale: "pt-BR" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: "npm run build:web && npx vite preview --host 127.0.0.1 --port 4173 --strictPort",

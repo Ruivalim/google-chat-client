@@ -6,6 +6,7 @@ import (
 	"github.com/ruivalim/google-chat-client/locales"
 	"log"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 
 	"github.com/egoist/mygo"
@@ -32,6 +33,11 @@ func main() {
 		desktop.service, err = chat.Open(filepath.Join(dir, "accounts.json"), systemVault{})
 		if err != nil {
 			log.Fatal(err)
+		}
+		// O MyGo já guarda o idioma; reaplicar o das configurações mantém os dois
+		// iguais se o arquivo dele sumir.
+		if lang := desktop.service.State().Language; lang != "" && slices.Contains(mygo.App.Languages(), lang) {
+			mygo.App.SetLocale(lang)
 		}
 		mygo.App.SetMenu(mygo.NewMenu([]*mygo.MenuItem{
 			{Role: mygo.RoleAppMenu}, {Role: mygo.RoleEditMenu},
@@ -60,20 +66,29 @@ func main() {
 			win.Show()
 			win.Focus()
 		}
-		tray, err := mygo.NewTray(mygo.TrayOptions{
-			Icon:    trayIcon,
-			ToolTip: "Google Chat Client",
-			Menu: mygo.NewMenu([]*mygo.MenuItem{
+		// O menu é montado de novo quando o idioma muda: rótulos próprios não se
+		// traduzem sozinhos.
+		trayMenu := func() *mygo.Menu {
+			return mygo.NewMenu([]*mygo.MenuItem{
 				{Label: locales.TrayOpen(), Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
 				mygo.Separator(),
 				{Label: locales.TrayQuit(), Role: mygo.RoleQuit},
-			}),
+			})
+		}
+		tray, err := mygo.NewTray(mygo.TrayOptions{
+			Icon:    trayIcon,
+			ToolTip: locales.AppName(),
+			Menu:    trayMenu(),
 		})
 		if err != nil {
 			log.Println("tray:", err)
 			return
 		}
 		desktop.tray = tray
+		mygo.App.OnLocaleChanged(func(string) {
+			tray.SetMenu(trayMenu())
+			desktop.unreadChanged(win, desktop.Unread())
+		})
 		mygo.App.OnWindowAllClosed(func() {})
 		win.OnClose(func(e *mygo.CloseEvent) {
 			if quitting.Load() {

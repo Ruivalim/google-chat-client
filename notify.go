@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"github.com/ruivalim/google-chat-client/locales"
 	"log"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -113,3 +115,16 @@ func (d *Desktop) SetNotifications(n chat.Notifications) (chat.State, error) {
 }
 
 func (d *Desktop) CheckIntervals() []int { return chat.CheckIntervals }
+
+// SetLanguage troca o idioma do app inteiro: as mensagens do Go, os menus e
+// a página. "" volta a seguir o sistema.
+func (d *Desktop) SetLanguage(tag string) (chat.State, error) {
+	if tag != "" && !slices.Contains(mygo.App.Languages(), tag) {
+		return d.State(), errors.New(locales.ErrLanguage())
+	}
+	if err := d.service.SetLanguage(tag); err != nil {
+		return d.State(), err
+	}
+	mygo.App.SetLocale(tag)
+	return d.State(), nil
+}

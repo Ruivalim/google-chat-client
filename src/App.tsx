@@ -39,9 +39,10 @@ import {
   WeatherMoon24Regular,
   WeatherSunny24Regular,
 } from "@fluentui/react-icons";
-import { isMyGo } from "mygo-runtime";
+import { isMyGo, onLocaleChange } from "mygo-runtime";
 import { type ReactElement, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import logo from "./assets/logo.png";
+import { chosenLanguage, currentLocale, setChosenLanguage, t } from "./i18n";
 import {
   type Account,
   type Activity,
@@ -87,16 +88,35 @@ const emptyState: State = {
   accounts: [],
   activeAccountId: "",
   notifications: { on: true, every: 60 },
+  language: "",
 };
 
 // Os mesmos valores de chat.CheckIntervals; o Go recusa qualquer outro.
-const checkIntervals: [number, string][] = [
-  [15, "15 segundos"],
-  [30, "30 segundos"],
-  [60, "1 minuto"],
-  [120, "2 minutos"],
-  [300, "5 minutos"],
+const checkIntervals: [number, () => string][] = [
+  [15, () => t().interval15()],
+  [30, () => t().interval30()],
+  [60, () => t().interval60()],
+  [120, () => t().interval120()],
+  [300, () => t().interval300()],
 ];
+
+// Idiomas oferecidos, cada um no próprio idioma.
+const languageOptions: [string, string][] = [
+  ["pt-BR", "Português (Brasil)"],
+  ["en", "English"],
+];
+
+// Negrito (**assim**) e código (`assim`) dentro das mensagens do catálogo, que
+// não carregam JSX: cada parágrafo fica uma frase inteira para quem traduz.
+function rich(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) => {
+    // biome-ignore lint/suspicious/noArrayIndexKey: os pedaços vêm de um split fixo do texto
+    if (part.startsWith("**")) return <strong key={i}>{part.slice(2, -2)}</strong>;
+    // biome-ignore lint/suspicious/noArrayIndexKey: os pedaços vêm de um split fixo do texto
+    if (part.startsWith("`")) return <code key={i}>{part.slice(1, -1)}</code>;
+    return part;
+  });
+}
 
 type OpenRequest = { activity: Activity; n: number };
 const native = isMyGo();
@@ -112,7 +132,7 @@ type Appearance = "system" | "light" | "dark";
 // As mensagens vêm do Go em minúscula, como manda a convenção de lá.
 function describe(error: unknown) {
   const text = error instanceof Error ? error.message : String(error);
-  return text.charAt(0).toLocaleUpperCase("pt-BR") + text.slice(1);
+  return text.charAt(0).toLocaleUpperCase(currentLocale()) + text.slice(1);
 }
 
 // Duas contas da mesma pessoa só se distinguem pela organização, então a faixa
@@ -125,7 +145,7 @@ function AccountAvatar({ account, size }: { account: Account; size?: 36 }) {
     <Avatar
       aria-hidden
       name={account.name || account.email}
-      initials={initials ? initials.toLocaleUpperCase("pt-BR") : undefined}
+      initials={initials ? initials.toLocaleUpperCase(currentLocale()) : undefined}
       color="colorful"
       idForColor={account.domain || account.email}
       size={size}
@@ -136,15 +156,15 @@ function AccountAvatar({ account, size }: { account: Account; size?: 36 }) {
 // O project_id vem no JSON do Google Cloud; sem ele, o número do projeto, que
 // abre o client ID.
 function projectLabel(project: Project) {
-  return project.projectId || `Projeto ${project.clientId.split("-")[0]}`;
+  return project.projectId || t().projectFallback(project.clientId.split("-")[0]);
 }
 
 function senderName(m: Message, account: Account) {
   if (m.sender.name === `users/${account.id}`) return account.name || account.email;
   if (m.sender.displayName) return m.sender.displayName;
   if (m.sender.email) return m.sender.email;
-  if (m.sender.type === "BOT") return "Aplicativo";
-  return m.sender.isAnonymous ? "Perfil indisponível" : "Pessoa sem nome visível";
+  if (m.sender.type === "BOT") return t().senderApp();
+  return m.sender.isAnonymous ? t().senderUnavailable() : t().senderNoName();
 }
 
 function openLink(url: string) {
@@ -203,7 +223,7 @@ function LoginPending({ size }: { size?: "small" }) {
   return (
     <>
       <span className="login-pending-text" role="status">
-        <Spinner size="tiny" /> Conclua o login no navegador
+        <Spinner size="tiny" /> {t().loginPending()}
       </span>
       <Button
         size={size}
@@ -215,10 +235,10 @@ function LoginPending({ size }: { size?: "small" }) {
             .catch(() => undefined)
         }
       >
-        {copied ? "Link copiado" : "Copiar link"}
+        {copied ? t().linkCopied() : t().copyLink()}
       </Button>
       <Button size={size} onClick={() => void Desktop.cancelLogin()}>
-        Cancelar
+        {t().cancel()}
       </Button>
     </>
   );
@@ -271,102 +291,68 @@ function ConnectGuide({ open, onClose }: { open: boolean; onClose: () => void })
         <DialogBody>
           <DialogTitle
             action={
-              <IconButton label="Fechar passo a passo" appearance="subtle" onClick={onClose}>
+              <IconButton label={t().guideClose()} appearance="subtle" onClick={onClose}>
                 <Dismiss24Regular />
               </IconButton>
             }
           >
-            Como conectar
+            {t().guideTitle()}
           </DialogTitle>
           <DialogContent>
             <ol className="guide">
               <li>
-                <h2>Crie um projeto só para este app</h2>
-                <p>
-                  Não reaproveite projeto de outra coisa: o nome que aparece no login e as regras de acesso valem para
-                  tudo o que usa o projeto. Para ter público <strong>Interno</strong>, crie logado com a conta da
-                  empresa, dentro da organização dela; projeto pessoal só oferece Externo.
-                </p>
-                <GuideLink href={`${consoleURL}/projectcreate`}>Criar projeto</GuideLink>
+                <h2>{t().guideStep1Title()}</h2>
+                <p>{rich(t().guideStep1Body())}</p>
+                <GuideLink href={`${consoleURL}/projectcreate`}>{t().guideCreateProject()}</GuideLink>
               </li>
               <li>
-                <h2>Ative a Google Chat API e configure o app de Chat</h2>
-                <p>
-                  Depois de ativar, abra a aba <strong>Configuração</strong> da API e preencha nome, URL de um ícone e
-                  descrição. Não precisa ligar nenhum recurso interativo. Sem essa configuração as conversas abrem, mas
-                  o envio falha com "Google Chat app not found".
-                </p>
+                <h2>{t().guideStep2Title()}</h2>
+                <p>{rich(t().guideStep2Body())}</p>
                 <div className="guide-links">
-                  <GuideLink href={`${consoleURL}/apis/library/chat.googleapis.com`}>Ativar a API</GuideLink>
-                  <GuideLink href={`${consoleURL}/apis/api/chat.googleapis.com/hangouts-chat`}>Configuração</GuideLink>
+                  <GuideLink href={`${consoleURL}/apis/library/chat.googleapis.com`}>{t().guideEnableApi()}</GuideLink>
+                  <GuideLink href={`${consoleURL}/apis/api/chat.googleapis.com/hangouts-chat`}>
+                    {t().guideConfiguration()}
+                  </GuideLink>
                 </div>
               </li>
               <li>
-                <h2>Configure o Google Auth Platform</h2>
+                <h2>{t().guideStep3Title()}</h2>
                 <ul>
-                  <li>
-                    <strong>Branding:</strong> o nome que aparece na tela de login, como "Google Chat Client", e seu
-                    email.
-                  </li>
-                  <li>
-                    <strong>Público:</strong> <strong>Interno</strong> aceita só contas da organização dona do projeto,
-                    sem lista de teste. <strong>Externo</strong> aceita contas de qualquer empresa.
-                  </li>
-                  <li>
-                    <strong>Acesso a dados:</strong> adicione os escopos abaixo. Dá para colar a lista em "Adicionar
-                    escopos manualmente".
-                  </li>
+                  <li>{rich(t().guideBranding())}</li>
+                  <li>{rich(t().guideAudience())}</li>
+                  <li>{rich(t().guideDataAccess())}</li>
                 </ul>
                 <code className="guide-scopes">{scopes.join("\n")}</code>
                 <div className="guide-links">
                   <Button size="small" icon={<Copy24Regular />} onClick={copyScopes}>
-                    {copied ? "Escopos copiados" : "Copiar escopos"}
+                    {copied ? t().scopesCopied() : t().copyScopes()}
                   </Button>
-                  <GuideLink href={`${consoleURL}/auth/branding`}>Branding</GuideLink>
-                  <GuideLink href={`${consoleURL}/auth/audience`}>Público</GuideLink>
-                  <GuideLink href={`${consoleURL}/auth/scopes`}>Acesso a dados</GuideLink>
+                  <GuideLink href={`${consoleURL}/auth/branding`}>{t().linkBranding()}</GuideLink>
+                  <GuideLink href={`${consoleURL}/auth/audience`}>{t().linkAudience()}</GuideLink>
+                  <GuideLink href={`${consoleURL}/auth/scopes`}>{t().linkDataAccess()}</GuideLink>
                 </div>
               </li>
               <li>
-                <h2>Com público Externo: teste ou produção</h2>
+                <h2>{t().guideStep4Title()}</h2>
                 <ul>
-                  <li>
-                    <strong>Em teste</strong>, só entra quem estiver em Público &gt; Usuários de teste. Conta fora da
-                    lista vê "has not completed the Google verification process (...) can only be accessed by
-                    developer-approved testers". A sessão vence a cada 7 dias e a conta precisa ser adicionada de novo.
-                  </li>
-                  <li>
-                    <strong>Em produção</strong> (Público &gt; Publicar app), a sessão não vence toda semana. Sem
-                    verificação, o login mostra a tela de app não verificado, e o projeto aceita até 100 usuários na
-                    vida inteira dele. A documentação do Google diz que escopo restrito, caso do{" "}
-                    <code>chat.messages</code>, precisa de verificação em produção; se o login for bloqueado, volte para
-                    teste.
-                  </li>
+                  <li>{rich(t().guideTesting())}</li>
+                  <li>{rich(t().guideProduction())}</li>
                 </ul>
               </li>
               <li>
-                <h2>Crie o cliente e importe aqui</h2>
-                <p>
-                  Em <strong>Clientes</strong>, crie um cliente do tipo <strong>Aplicativo para computador</strong>,
-                  baixe o JSON e use <strong>Importar arquivo JSON</strong> nas configurações. Depois, Adicionar conta.
-                  Para entrar por outro navegador ou container, use <strong>Copiar link</strong> enquanto o login está
-                  pendente.
-                </p>
-                <GuideLink href={`${consoleURL}/auth/clients`}>Clientes</GuideLink>
+                <h2>{t().guideStep5Title()}</h2>
+                <p>{rich(t().guideStep5Body())}</p>
+                <GuideLink href={`${consoleURL}/auth/clients`}>{t().linkClients()}</GuideLink>
               </li>
               <li>
-                <h2>Se uma empresa bloquear o app</h2>
-                <p>
-                  O erro de bloqueio do administrador quer dizer que aquele Workspace restringe apps de terceiros. O
-                  admin de lá libera o client ID em Admin console &gt; Segurança &gt; Acesso e controle de dados &gt;
-                  Controles de API, marcando o app como <strong>Confiável</strong>.
-                </p>
+                <h2>{t().guideStep6Title()}</h2>
+                <p>{rich(t().guideStep6Body())}</p>
               </li>
             </ol>
           </DialogContent>
           <DialogActions>
             <Button appearance="primary" onClick={onClose}>
-              Entendi
+              {t().gotIt()}
             </Button>
           </DialogActions>
         </DialogBody>
@@ -398,6 +384,9 @@ export function App() {
   const [connecting, setConnecting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [removing, setRemoving] = useState("");
+  const [language, setLanguage] = useState(chosenLanguage());
+  // Só para redesenhar quando o idioma do sistema ou do app muda.
+  const [, setLocaleTick] = useState(0);
   const [appearance, setAppearance] = useState<Appearance>(() => {
     const saved = localStorage.getItem("appearance");
     return saved === "light" || saved === "dark" ? saved : "system";
@@ -468,6 +457,18 @@ export function App() {
     query.addEventListener("change", change);
     return () => query.removeEventListener("change", change);
   }, []);
+  useEffect(() => {
+    if (!native) return;
+    return onLocaleChange(() => setLocaleTick((n) => n + 1));
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = currentLocale();
+  });
+  // No desktop o idioma salvo vem do Go; a página começa seguindo o que o MyGo
+  // já aplicou e só precisa saber qual opção marcar.
+  useEffect(() => {
+    if (native) setLanguage(state.language);
+  }, [state.language]);
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
     localStorage.setItem("appearance", appearance);
@@ -544,6 +545,18 @@ export function App() {
     }
   }
 
+  async function chooseLanguage(tag: string) {
+    setError("");
+    setChosenLanguage(tag);
+    setLanguage(tag);
+    if (!native) return;
+    try {
+      setState(await Desktop.setLanguage(tag));
+    } catch (err) {
+      setError(describe(err));
+    }
+  }
+
   async function saveNotifications(next: Notifications) {
     setError("");
     try {
@@ -578,9 +591,9 @@ export function App() {
     <FluentProvider theme={theme}>
       <div className="app">
         <a href="#main-content" className="skip-link">
-          Ir para a conversa
+          {t().skipToConversation()}
         </a>
-        <nav className="account-rail" aria-label="Contas Google">
+        <nav className="account-rail" aria-label={t().googleAccounts()}>
           <div className="rail-heading" title="Google Chat Client">
             <img src={logo} alt="" width={32} height={32} />
           </div>
@@ -591,7 +604,7 @@ export function App() {
                   type="button"
                   className={`account-button ${account?.id === a.id ? "selected" : ""}`}
                   aria-pressed={account?.id === a.id}
-                  aria-label={`Usar ${a.email}${unreadOf(a.id) ? `, ${unreadOf(a.id)} não lidas` : ""}`}
+                  aria-label={t().switchToAccount(unreadOf(a.id), a.email)}
                   onClick={() => void select(a.id)}
                 >
                   <AccountAvatar account={a} size={36} />
@@ -605,7 +618,7 @@ export function App() {
             ))}
           </div>
           <IconButton
-            label="Adicionar conta Google"
+            label={t().addGoogleAccount()}
             appearance="subtle"
             disabled={!native || connecting}
             onClick={() => void connect()}
@@ -614,13 +627,13 @@ export function App() {
           </IconButton>
           <div className="rail-bottom">
             <IconButton
-              label={dark ? "Usar tema claro" : "Usar tema escuro"}
+              label={dark ? t().lightThemeAction() : t().darkThemeAction()}
               appearance="subtle"
               onClick={() => setAppearance(dark ? "light" : "dark")}
             >
               {dark ? <WeatherSunny24Regular /> : <WeatherMoon24Regular />}
             </IconButton>
-            <IconButton label="Configurações e contas" appearance="subtle" onClick={() => setSettings(true)}>
+            <IconButton label={t().settingsAndAccounts()} appearance="subtle" onClick={() => setSettings(true)}>
               <Settings24Regular />
             </IconButton>
           </div>
@@ -638,7 +651,7 @@ export function App() {
           )}
           {starting ? (
             <div className="center-state">
-              <Spinner label="Carregando suas contas" />
+              <Spinner label={t().loadingAccounts()} />
             </div>
           ) : account ? (
             <Workspace
@@ -655,20 +668,14 @@ export function App() {
                 <span>Google Chat Client</span>
               </div>
               <div className="welcome-content">
-                <p className="eyebrow">Seu espaço de trabalho</p>
+                <p className="eyebrow">{t().welcomeEyebrow()}</p>
                 <h1>
-                  Suas conversas.
+                  {t().welcomeTitle1()}
                   <br />
-                  Cada conta no seu lugar.
+                  {t().welcomeTitle2()}
                 </h1>
-                <p className="welcome-description">
-                  Conecte suas contas Google Workspace e alterne entre elas na mesma janela.
-                </p>
-                {!native && (
-                  <div className="preview-note">
-                    Abra o aplicativo desktop para conectar suas contas. Esta janela mostra apenas a interface.
-                  </div>
-                )}
+                <p className="welcome-description">{t().welcomeDescription()}</p>
+                {!native && <div className="preview-note">{t().previewNote()}</div>}
                 <div className="welcome-action">
                   {configured ? (
                     <Button
@@ -678,7 +685,7 @@ export function App() {
                       disabled={!native || connecting}
                       onClick={() => void connect()}
                     >
-                      Conectar conta Google
+                      {t().connectGoogleAccount()}
                     </Button>
                   ) : (
                     <Button
@@ -688,23 +695,23 @@ export function App() {
                       disabled={!native || importing}
                       onClick={() => void importCredentials()}
                     >
-                      Importar credenciais Google
+                      {t().importGoogleCredentials()}
                     </Button>
                   )}
                   <Button appearance="subtle" onClick={() => setGuide(true)}>
-                    Como conectar
+                    {t().howToConnect()}
                   </Button>
                 </div>
                 <p className="welcome-detail">
                   {!configured
-                    ? "Primeiro, importe o arquivo OAuth do seu projeto Google Cloud."
+                    ? t().welcomeNoProject()
                     : manyProjects
-                      ? `${state.projects.length} projetos importados. Nas configurações você escolhe por qual a conta entra.`
-                      : "Projeto configurado. O login abre no seu navegador."}
+                      ? t().welcomeManyProjects(state.projects.length)
+                      : t().welcomeOneProject()}
                 </p>
               </div>
               <div className="welcome-footer">
-                <span>Chat para o trabalho</span>
+                <span>{t().welcomeTagline()}</span>
                 <span>Windows · Linux · macOS</span>
               </div>
             </div>
@@ -716,18 +723,18 @@ export function App() {
             <DialogBody>
               <DialogTitle
                 action={
-                  <IconButton label="Fechar configurações" appearance="subtle" onClick={() => setSettings(false)}>
+                  <IconButton label={t().closeSettings()} appearance="subtle" onClick={() => setSettings(false)}>
                     <Dismiss24Regular />
                   </IconButton>
                 }
               >
-                Configurações
+                {t().settingsTitle()}
               </DialogTitle>
               <DialogContent>
                 {error && <Notice>{error}</Notice>}
                 <section className="settings-section">
-                  <h2>Contas Google</h2>
-                  <p>As contas mantêm sessões separadas. Remover uma conta encerra a sessão neste aplicativo.</p>
+                  <h2>{t().googleAccounts()}</h2>
+                  <p>{t().accountsDescription()}</p>
                   {state.accounts.map((a) => (
                     <div className="settings-account" key={a.id}>
                       <AccountAvatar account={a} />
@@ -736,11 +743,11 @@ export function App() {
                         <span>
                           {a.email}
                           {manyProjects &&
-                            ` · ${projectOf(a) ? projectLabel(projectOf(a) as Project) : "projeto removido"}`}
+                            ` · ${projectOf(a) ? projectLabel(projectOf(a) as Project) : t().projectRemoved()}`}
                         </span>
                       </div>
                       <Button disabled={removing !== "" || connecting} onClick={() => void remove(a.id)}>
-                        {removing === a.id ? "Removendo…" : "Remover"}
+                        {removing === a.id ? t().removing() : t().remove()}
                       </Button>
                     </div>
                   ))}
@@ -749,23 +756,18 @@ export function App() {
                       <LoginPending />
                     </div>
                   ) : !configured ? (
-                    <p className="settings-hint">
-                      Importe o arquivo JSON de um projeto, logo abaixo, para liberar o login.
-                    </p>
+                    <p className="settings-hint">{t().hintNoProject()}</p>
                   ) : manyProjects ? (
-                    <p className="settings-hint">Para adicionar uma conta, escolha o projeto dela na lista abaixo.</p>
+                    <p className="settings-hint">{t().hintManyProjects()}</p>
                   ) : (
                     <Button icon={<Add24Regular />} disabled={!native || importing} onClick={() => void connect()}>
-                      Adicionar conta Google
+                      {t().addGoogleAccount()}
                     </Button>
                   )}
                 </section>
                 <section className="settings-section">
-                  <h2>Projetos Google Cloud</h2>
-                  <p>
-                    Cada JSON importado é um projeto, e cada conta entra pelo projeto que você escolher. Para criar um,
-                    siga o passo a passo.
-                  </p>
+                  <h2>{t().projectsHeading()}</h2>
+                  <p>{t().projectsDescription()}</p>
                   <Button
                     className="guide-open"
                     appearance="subtle"
@@ -775,7 +777,7 @@ export function App() {
                       setGuide(true);
                     }}
                   >
-                    Como conectar: passo a passo
+                    {t().openGuide()}
                   </Button>
                   {state.projects.map((p) => {
                     const count = accountsOf(p.clientId);
@@ -784,7 +786,7 @@ export function App() {
                         <div>
                           <strong>{projectLabel(p)}</strong>
                           <code className="client-id">{p.clientId}</code>
-                          <span>{count === 0 ? "Nenhuma conta" : count === 1 ? "1 conta" : `${count} contas`}</span>
+                          <span>{t().projectAccounts(count)}</span>
                         </div>
                         {manyProjects && (
                           <Button
@@ -792,11 +794,11 @@ export function App() {
                             disabled={!native || connecting || importing}
                             onClick={() => void connect(p.clientId)}
                           >
-                            Adicionar conta
+                            {t().addAccount()}
                           </Button>
                         )}
                         <Tooltip
-                          content={count > 0 ? "Remova as contas deste projeto primeiro" : "Remover este projeto"}
+                          content={count > 0 ? t().removeProjectFirst() : t().removeProject()}
                           relationship="description"
                         >
                           <Button
@@ -804,7 +806,7 @@ export function App() {
                             disabled={removing !== "" || connecting}
                             onClick={() => void removeProject(p.clientId)}
                           >
-                            {removing === p.clientId ? "Removendo…" : "Remover"}
+                            {removing === p.clientId ? t().removing() : t().remove()}
                           </Button>
                         </Tooltip>
                       </div>
@@ -816,35 +818,29 @@ export function App() {
                       disabled={!native || importing || connecting}
                       onClick={() => void importCredentials()}
                     >
-                      {importing ? "Importando…" : configured ? "Importar outro JSON" : "Importar arquivo JSON"}
+                      {importing ? t().importing() : configured ? t().importAnotherJson() : t().importJson()}
                     </Button>
                     <Button
                       appearance="subtle"
                       icon={<Open24Regular />}
                       onClick={() => void openLink("https://console.cloud.google.com/auth/clients")}
                     >
-                      Abrir Google Cloud
+                      {t().openGoogleCloud()}
                     </Button>
                   </div>
-                  <p>
-                    O login pode depender da liberação do aplicativo pelo administrador do Workspace. As credenciais
-                    ficam no chaveiro do sistema.
-                  </p>
+                  <p>{t().projectsAdminNote()}</p>
                 </section>
                 <section className="settings-section">
-                  <h2>Notificações</h2>
-                  <p>
-                    O app procura mensagens novas em todas as contas e avisa pelo sistema. Funciona enquanto ele está
-                    aberto; a conversa que você está olhando não gera aviso.
-                  </p>
+                  <h2>{t().notificationsHeading()}</h2>
+                  <p>{t().notificationsDescription()}</p>
                   <div className="notification-setting">
                     <Switch
-                      label="Avisar mensagens novas"
+                      label={t().notifyToggle()}
                       checked={state.notifications.on}
                       disabled={!native}
                       onChange={(_, data) => void saveNotifications({ ...state.notifications, on: data.checked })}
                     />
-                    <label htmlFor="check-every">Verificar a cada</label>
+                    <label htmlFor="check-every">{t().checkEvery()}</label>
                     <Select
                       id="check-every"
                       value={String(state.notifications.every)}
@@ -855,28 +851,39 @@ export function App() {
                     >
                       {checkIntervals.map(([seconds, label]) => (
                         <option key={seconds} value={seconds}>
-                          {label}
+                          {label()}
                         </option>
                       ))}
                     </Select>
                   </div>
                 </section>
                 <section className="settings-section appearance-setting">
-                  <label htmlFor="appearance">Aparência</label>
+                  <label htmlFor="language">{t().language()}</label>
+                  <Select id="language" value={language} onChange={(_, data) => void chooseLanguage(data.value)}>
+                    <option value="">{t().followSystem()}</option>
+                    {languageOptions.map(([tag, name]) => (
+                      <option key={tag} value={tag} lang={tag}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
+                </section>
+                <section className="settings-section appearance-setting">
+                  <label htmlFor="appearance">{t().appearance()}</label>
                   <Select
                     id="appearance"
                     value={appearance}
                     onChange={(_, data) => setAppearance(data.value as Appearance)}
                   >
-                    <option value="system">Seguir o sistema</option>
-                    <option value="light">Claro</option>
-                    <option value="dark">Escuro</option>
+                    <option value="system">{t().followSystem()}</option>
+                    <option value="light">{t().light()}</option>
+                    <option value="dark">{t().dark()}</option>
                   </Select>
                 </section>
               </DialogContent>
               <DialogActions>
                 <Button appearance="primary" onClick={() => setSettings(false)}>
-                  Concluir
+                  {t().done()}
                 </Button>
               </DialogActions>
             </DialogBody>
@@ -978,16 +985,16 @@ function Workspace({
   });
   return (
     <div className="workspace" data-has-space={!!selected}>
-      <aside className="conversations" aria-label="Conversas da conta selecionada">
+      <aside className="conversations" aria-label={t().conversationsOfAccount()}>
         <header className="workspace-heading">
           <div>
-            <h1>Chat</h1>
+            <h1>{t().chatHeading()}</h1>
             <button type="button" className="account-label" onClick={onSettings} title={account.email}>
               {account.domain || account.email}
             </button>
           </div>
           <IconButton
-            label="Atualizar lista de conversas"
+            label={t().refreshConversations()}
             appearance="subtle"
             disabled={loading}
             onClick={() => setRefresh((n) => n + 1)}
@@ -998,16 +1005,16 @@ function Workspace({
         <div className="conversation-filter">
           <Input
             contentBefore={<Search24Regular />}
-            placeholder="Filtrar conversas"
-            aria-label="Filtrar conversas carregadas"
+            placeholder={t().filterPlaceholder()}
+            aria-label={t().filterLabel()}
             value={query}
             onChange={(_, data) => setQuery(data.value)}
           />
-          <fieldset className="filter-tabs" aria-label="Tipo de conversa">
+          <fieldset className="filter-tabs" aria-label={t().conversationType()}>
             {[
-              ["all", "Tudo"],
-              ["chats", "Conversas"],
-              ["spaces", "Espaços"],
+              ["all", t().filterAll()],
+              ["chats", t().filterChats()],
+              ["spaces", t().filterSpaces()],
             ].map(([value, label]) => (
               <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>
                 {label}
@@ -1018,12 +1025,12 @@ function Workspace({
         {error && (
           <div className="list-notice">
             <Notice>{error}</Notice>
-            <Button onClick={() => setRefresh((n) => n + 1)}>Tentar novamente</Button>
+            <Button onClick={() => setRefresh((n) => n + 1)}>{t().tryAgain()}</Button>
           </div>
         )}
         <div className="conversation-list" aria-busy={loading}>
           {loading && spaces.length === 0 ? (
-            <Spinner size="small" label="Buscando conversas" />
+            <Spinner size="small" label={t().searchingConversations()} />
           ) : filtered.length ? (
             filtered.map((s) => (
               <button
@@ -1044,16 +1051,16 @@ function Workspace({
                   <strong>{spaceName(s)}</strong>
                   <span>
                     {s.spaceType === "SPACE"
-                      ? "Espaço"
+                      ? t().typeSpace()
                       : s.spaceType === "GROUP_CHAT"
-                        ? "Conversa em grupo"
-                        : "Conversa direta"}
+                        ? t().typeGroup()
+                        : t().typeDirect()}
                   </span>
                 </span>
                 {unreadIn(s.name) > 0 && selected?.name !== s.name && (
                   <span className="unread-badge inline">
                     {unreadIn(s.name)}
-                    <span className="sr-only"> não lidas</span>
+                    <span className="sr-only"> {t().unreadSuffix()}</span>
                   </span>
                 )}
               </button>
@@ -1061,30 +1068,26 @@ function Workspace({
           ) : (
             !loading &&
             !error && (
-              <div className="list-empty">
-                {query || filter !== "all"
-                  ? "Nenhuma conversa corresponde ao filtro."
-                  : "Nenhuma conversa encontrada nesta conta. Inicie uma no Google Chat e atualize a lista."}
-              </div>
+              <div className="list-empty">{query || filter !== "all" ? t().noMatch() : t().noConversations()}</div>
             )
           )}
           {cursor && (
             <Button className="more-conversations" disabled={loadingMore} onClick={() => void more()}>
-              {loadingMore ? "Carregando…" : "Mais conversas"}
+              {loadingMore ? t().loading() : t().moreConversations()}
             </Button>
           )}
         </div>
         <footer className="workspace-footer">
           <span title={account.email}>{account.email}</span>
-          <span>Conta ativa</span>
+          <span>{t().activeAccount()}</span>
         </footer>
       </aside>
-      <section className="conversation" aria-label="Histórico da conversa">
+      <section className="conversation" aria-label={t().conversationHistory()}>
         {selected ? (
           <>
             <header className="conversation-header">
               <IconButton
-                label="Voltar às conversas"
+                label={t().backToConversations()}
                 appearance="subtle"
                 className="back-button"
                 onClick={() => {
@@ -1100,7 +1103,7 @@ function Workspace({
               </div>
               {selected.spaceUri && (
                 <IconButton
-                  label="Abrir esta conversa no Google Chat"
+                  label={t().openInGoogleChat()}
                   appearance="subtle"
                   onClick={() => void openLink(selected.spaceUri)}
                 >
@@ -1116,10 +1119,10 @@ function Workspace({
                 onThread={setThread}
               />
               {thread && (
-                <aside className="thread-panel" aria-label="Thread">
+                <aside className="thread-panel" aria-label={t().thread()}>
                   <header>
-                    <h3>Thread</h3>
-                    <IconButton label="Fechar thread" appearance="subtle" onClick={() => setThread("")}>
+                    <h3>{t().thread()}</h3>
+                    <IconButton label={t().closeThread()} appearance="subtle" onClick={() => setThread("")}>
                       <Dismiss24Regular />
                     </IconButton>
                   </header>
@@ -1131,9 +1134,9 @@ function Workspace({
         ) : (
           <div className="center-state choose-conversation">
             <Chat24Regular />
-            <h2>Uma conversa de cada vez</h2>
-            <p>Escolha uma conversa à esquerda para ler e responder.</p>
-            <span className="current-account">Você está usando {account.email}</span>
+            <h2>{t().chooseTitle()}</h2>
+            <p>{t().chooseBody()}</p>
+            <span className="current-account">{t().usingAccount(account.email)}</span>
           </div>
         )}
       </section>
@@ -1165,7 +1168,8 @@ function linkify(text: string) {
 }
 
 function spaceName(space: Space) {
-  return space.displayName || `${space.spaceType === "SPACE" ? "Espaço" : "Conversa"} ${space.name.split("/").at(-1)}`;
+  const id = space.name.split("/").at(-1) ?? "";
+  return space.displayName || (space.spaceType === "SPACE" ? t().spaceFallback(id) : t().conversationFallback(id));
 }
 
 function mergeMessages(previous: Message[], incoming: Message[], fresh: boolean) {
@@ -1272,14 +1276,14 @@ function Timeline({
         <div className="message-notice">
           <Notice>{error}</Notice>
           <Button size="small" onClick={() => setRefresh((n) => n + 1)}>
-            Tentar novamente
+            {t().tryAgain()}
           </Button>
         </div>
       )}
       <section
         className="messages"
         ref={scroller}
-        aria-label={thread ? "Mensagens da thread" : "Mensagens"}
+        aria-label={thread ? t().threadMessages() : t().messagesLabel()}
         aria-busy={loading}
         onScroll={(event) => {
           const n = event.currentTarget;
@@ -1289,18 +1293,18 @@ function Timeline({
         {cursor && (
           <div className="older-messages">
             <Button disabled={loadingMore} size="small" onClick={() => void more()}>
-              {loadingMore ? "Carregando…" : "Carregar mensagens anteriores"}
+              {loadingMore ? t().loading() : t().loadOlder()}
             </Button>
           </div>
         )}
         {loading ? (
           <div className="center-state">
-            <Spinner size="small" label="Carregando mensagens" />
+            <Spinner size="small" label={t().loadingMessages()} />
           </div>
         ) : messages.length === 0 && !error ? (
           <div className="center-state">
-            <h3>{thread ? "A thread ainda não tem mensagens" : "A conversa começa aqui"}</h3>
-            <p>Escreva uma mensagem abaixo.</p>
+            <h3>{thread ? t().threadEmpty() : t().conversationStarts()}</h3>
+            <p>{t().writeBelow()}</p>
           </div>
         ) : (
           messages.map((m, index) => (
@@ -1354,7 +1358,7 @@ function MessageRow({
           <time dateTime={m.createTime}>
             {Number.isNaN(date.valueOf())
               ? ""
-              : date.toLocaleDateString("pt-BR", {
+              : date.toLocaleDateString(currentLocale(), {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
@@ -1370,17 +1374,17 @@ function MessageRow({
             <time dateTime={m.createTime}>
               {Number.isNaN(date.valueOf())
                 ? ""
-                : date.toLocaleTimeString("pt-BR", {
+                : date.toLocaleTimeString(currentLocale(), {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
             </time>
-            {m.threadReply && <span className="reply-label">Na thread</span>}
+            {m.threadReply && <span className="reply-label">{t().inThread()}</span>}
           </header>
           {m.text ? (
             <p className="message-text">{linkify(m.text)}</p>
           ) : (
-            !m.attachment?.length && <p className="unsupported-content">Conteúdo disponível no Google Chat</p>
+            !m.attachment?.length && <p className="unsupported-content">{t().unsupported()}</p>
           )}
           {m.attachment?.map((file, i) => (
             <MessageAttachment key={file.name || i} account={account} file={file} />
@@ -1393,7 +1397,7 @@ function MessageRow({
               icon={<Chat24Regular />}
               onClick={onThread}
             >
-              Abrir thread
+              {t().openThread()}
             </Button>
           )}
         </div>
@@ -1406,7 +1410,7 @@ function MessageRow({
 function MessageAttachment({ account, file }: { account: Account; file: Attachment }) {
   const [state, setState] = useState<"idle" | "saving" | "error">("idle");
   const [saved, setSaved] = useState("");
-  const name = file.contentName || "Arquivo";
+  const name = file.contentName || t().fileFallback();
   const resource = file.attachmentDataRef?.resourceName ?? "";
   const drive = file.driveDataRef?.driveFileId ?? "";
   async function download() {
@@ -1432,12 +1436,12 @@ function MessageAttachment({ account, file }: { account: Account; file: Attachme
           icon={<Open24Regular />}
           onClick={() => void openLink(`https://drive.google.com/file/d/${encodeURIComponent(drive)}/view`)}
         >
-          Abrir no Drive
+          {t().openInDrive()}
         </Button>
       ) : resource && native ? (
         saved ? (
           <Button size="small" appearance="subtle" onClick={() => void Desktop.showInFolder(saved)}>
-            Salvo · mostrar na pasta
+            {t().savedShowInFolder()}
           </Button>
         ) : (
           <Button
@@ -1445,10 +1449,10 @@ function MessageAttachment({ account, file }: { account: Account; file: Attachme
             appearance="subtle"
             icon={<ArrowDownload24Regular />}
             disabled={state === "saving"}
-            aria-label={`Baixar ${name}`}
+            aria-label={t().downloadFile(name)}
             onClick={() => void download()}
           >
-            {state === "saving" ? "Baixando…" : state === "error" ? "Falhou; tentar de novo" : "Baixar"}
+            {state === "saving" ? t().downloading() : state === "error" ? t().downloadFailed() : t().download()}
           </Button>
         )
       ) : (
@@ -1459,7 +1463,7 @@ function MessageAttachment({ account, file }: { account: Account; file: Attachme
             icon={<Open24Regular />}
             onClick={() => void openLink(file.downloadUri)}
           >
-            Abrir no Google Chat
+            {t().openAttachmentInChat()}
           </Button>
         )
       )}
@@ -1470,7 +1474,7 @@ function MessageAttachment({ account, file }: { account: Account; file: Attachme
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
+  return `${(bytes / 1024 / 1024).toLocaleString(currentLocale(), { maximumFractionDigits: 1 })} MB`;
 }
 
 function Composer({
@@ -1529,7 +1533,7 @@ function Composer({
     drafts.set(key, attempt);
     try {
       if (attempt.files.length === 0) {
-        setSending("Enviando…");
+        setSending(t().sending());
         onSent(await Desktop.sendMessage(account.id, space.name, attempt.text, thread, attempt.requestId, null));
       }
       // Um arquivo por mensagem; o texto vai junto com o primeiro.
@@ -1545,7 +1549,7 @@ function Composer({
         };
         let ref = file.ref;
         if (!ref) {
-          setSending(`Enviando ${file.name}…`);
+          setSending(t().sendingFile(file.name));
           ref = await Desktop.uploadAttachment(account.id, space.name, file.id);
           update({ ref });
         }
@@ -1578,8 +1582,7 @@ function Composer({
     <div className="composer-wrapper">
       {error && (
         <Notice>
-          {error} {files.length ? "O que faltou enviar ficou aqui" : "O texto foi preservado"}; você pode tentar enviar
-          novamente.
+          {error} {files.length ? t().keptFiles() : t().keptText()}
         </Notice>
       )}
       <form
@@ -1590,17 +1593,17 @@ function Composer({
         }}
       >
         <label className="sr-only" htmlFor={`message-${thread ? "thread" : "main"}`}>
-          {thread ? "Responder à thread" : "Escrever mensagem"}
+          {thread ? t().replyToThread() : t().writeMessage()}
         </label>
         {pending.length > 0 && (
-          <ul className="composer-files" aria-label="Arquivos para enviar">
+          <ul className="composer-files" aria-label={t().filesToSend()}>
             {pending.map((f) => (
               <li key={f.id} className={`composer-file${f.tooLarge ? " too-large" : ""}`}>
                 <Document24Regular aria-hidden />
                 <span className="file-name">{f.name}</span>
-                <span className="file-size">{f.tooLarge ? "mais de 200 MB, o limite" : formatSize(f.size)}</span>
+                <span className="file-size">{f.tooLarge ? t().overLimit() : formatSize(f.size)}</span>
                 <IconButton
-                  label={`Tirar ${f.name}`}
+                  label={t().removeFile(f.name)}
                   appearance="subtle"
                   disabled={sending !== ""}
                   onClick={() => unpick(f.id)}
@@ -1616,7 +1619,7 @@ function Composer({
           id={`message-${thread ? "thread" : "main"}`}
           value={draft}
           disabled={sending !== ""}
-          placeholder={thread ? "Responder à thread…" : "Escrever uma mensagem…"}
+          placeholder={thread ? t().replyPlaceholder() : t().messagePlaceholder()}
           rows={2}
           maxLength={32000}
           onChange={(event) => change(event.target.value)}
@@ -1629,7 +1632,7 @@ function Composer({
         />
         <div className="composer-toolbar">
           <IconButton
-            label="Anexar arquivos"
+            label={t().attachFiles()}
             appearance="subtle"
             disabled={!native || sending !== ""}
             onClick={() => void pick()}
@@ -1644,13 +1647,13 @@ function Composer({
             icon={<Send24Regular />}
             type="submit"
             disabled={sending !== "" || blocked || (!draft.trim() && pending.length === 0)}
-            aria-label={thread ? "Enviar resposta à thread" : "Enviar mensagem"}
+            aria-label={thread ? t().sendReply() : t().sendMessage()}
           >
-            {sending ? "Enviando…" : "Enviar"}
+            {sending ? t().sending() : t().send()}
           </Button>
         </div>
       </form>
-      <span className="composer-hint">Enter para enviar · Shift + Enter para nova linha</span>
+      <span className="composer-hint">{t().composerHint()}</span>
     </div>
   );
 }
