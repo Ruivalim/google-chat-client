@@ -20,18 +20,26 @@ var requestIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{16,64}$|^[a-fA-F0-9-]{
 
 func (s *Service) api(ctx context.Context, accountID, method, path string, query url.Values, body any, out any) error {
 	token, err := s.accessToken(ctx, accountID)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	var data []byte
 	if body != nil {
 		data, err = json.Marshal(body)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 	}
 	req, err := http.NewRequestWithContext(ctx, method, s.apiURL+"/"+path+"?"+query.Encode(), bytes.NewReader(data))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	r, err := s.http.Do(req)
-	if err != nil { return errors.New("não foi possível alcançar o Google Chat; confira a conexão e tente novamente") }
+	if err != nil {
+		return errors.New("não foi possível alcançar o Google Chat; confira a conexão e tente novamente")
+	}
 	defer r.Body.Close()
 	if r.StatusCode < 200 || r.StatusCode >= 300 {
 		switch r.StatusCode {
@@ -47,7 +55,9 @@ func (s *Service) api(ctx context.Context, accountID, method, path string, query
 			return fmt.Errorf("o Google Chat retornou um erro (%d); tente novamente", r.StatusCode)
 		}
 	}
-	if out == nil { return nil }
+	if out == nil {
+		return nil
+	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, 8<<20)).Decode(out); err != nil {
 		return errors.New("a resposta do Google Chat não pôde ser lida")
 	}
@@ -57,15 +67,23 @@ func (s *Service) api(ctx context.Context, accountID, method, path string, query
 func (s *Service) Spaces(ctx context.Context, accountID, pageToken string) (SpacePage, error) {
 	page := SpacePage{Spaces: []Space{}}
 	q := url.Values{"pageSize": {"100"}}
-	if pageToken != "" { q.Set("pageToken", pageToken) }
-	if err := s.api(ctx, accountID, http.MethodGet, "spaces", q, nil, &page); err != nil { return page, err }
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
+	if err := s.api(ctx, accountID, http.MethodGet, "spaces", q, nil, &page); err != nil {
+		return page, err
+	}
 	x, err := s.accountSession(accountID)
-	if err != nil { return page, err }
+	if err != nil {
+		return page, err
+	}
 	var wg sync.WaitGroup
 	limit := make(chan struct{}, 4)
 	for i := range page.Spaces {
 		space := &page.Spaces[i]
-		if space.DisplayName != "" { continue }
+		if space.DisplayName != "" {
+			continue
+		}
 		if label, ok := x.labels.Load(space.Name); ok {
 			space.DisplayName = label.(string)
 			continue
@@ -73,8 +91,12 @@ func (s *Service) Spaces(ctx context.Context, accountID, pageToken string) (Spac
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			select { case limit <- struct{}{}: case <-ctx.Done(): return }
-			defer func(){ <-limit }()
+			select {
+			case limit <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+			defer func() { <-limit }()
 			name, err := s.spaceLabel(ctx, accountID, space.Name)
 			if err == nil && name != "" {
 				space.DisplayName = name
@@ -88,47 +110,81 @@ func (s *Service) Spaces(ctx context.Context, accountID, pageToken string) (Spac
 }
 
 func (s *Service) spaceLabel(ctx context.Context, accountID, space string) (string, error) {
-	if !spacePattern.MatchString(space) { return "", errors.New("identificador de conversa inválido") }
-	var page struct { Memberships []struct { Member User `json:"member"` } `json:"memberships"` }
-	if err := s.api(ctx, accountID, http.MethodGet, space+"/members", url.Values{"pageSize": {"20"}}, nil, &page); err != nil { return "", err }
+	if !spacePattern.MatchString(space) {
+		return "", errors.New("identificador de conversa inválido")
+	}
+	var page struct {
+		Memberships []struct {
+			Member User `json:"member"`
+		} `json:"memberships"`
+	}
+	if err := s.api(ctx, accountID, http.MethodGet, space+"/members", url.Values{"pageSize": {"20"}}, nil, &page); err != nil {
+		return "", err
+	}
 	names := []string{}
 	for _, m := range page.Memberships {
-		if m.Member.Name == "users/"+accountID { continue }
+		if m.Member.Name == "users/"+accountID {
+			continue
+		}
 		name := m.Member.DisplayName
-		if name == "" { name = strings.TrimPrefix(m.Member.Name, "users/") }
-		if name != "" { names = append(names, name) }
+		if name == "" {
+			name = strings.TrimPrefix(m.Member.Name, "users/")
+		}
+		if name != "" {
+			names = append(names, name)
+		}
 	}
 	return strings.Join(names, ", "), nil
 }
 
 func (s *Service) Messages(ctx context.Context, accountID, space, pageToken, thread string) (MessagePage, error) {
 	page := MessagePage{Messages: []Message{}}
-	if !spacePattern.MatchString(space) { return page, errors.New("identificador de conversa inválido") }
+	if !spacePattern.MatchString(space) {
+		return page, errors.New("identificador de conversa inválido")
+	}
 	q := url.Values{"pageSize": {"50"}, "orderBy": {"create_time DESC"}}
-	if pageToken != "" { q.Set("pageToken", pageToken) }
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
 	if thread != "" {
-		if !validThread(space, thread) { return page, errors.New("a thread não pertence à conversa selecionada") }
+		if !validThread(space, thread) {
+			return page, errors.New("a thread não pertence à conversa selecionada")
+		}
 		q.Set("filter", "thread.name = "+thread)
 	}
-	if err := s.api(ctx, accountID, http.MethodGet, space+"/messages", q, nil, &page); err != nil { return page, err }
+	if err := s.api(ctx, accountID, http.MethodGet, space+"/messages", q, nil, &page); err != nil {
+		return page, err
+	}
 	slices.Reverse(page.Messages)
 	return page, nil
 }
 
 func (s *Service) SendMessage(ctx context.Context, accountID, space, text, thread, id string) (Message, error) {
-	if !spacePattern.MatchString(space) { return Message{}, errors.New("identificador de conversa inválido") }
-	if strings.TrimSpace(text) == "" || len(text) > 32000 { return Message{}, errors.New("escreva uma mensagem de até 32.000 bytes") }
-	if id == "" { id = requestID() }
-	if !requestIDPattern.MatchString(id) { return Message{}, errors.New("identificador de envio inválido") }
+	if !spacePattern.MatchString(space) {
+		return Message{}, errors.New("identificador de conversa inválido")
+	}
+	if strings.TrimSpace(text) == "" || len(text) > 32000 {
+		return Message{}, errors.New("escreva uma mensagem de até 32.000 bytes")
+	}
+	if id == "" {
+		id = requestID()
+	}
+	if !requestIDPattern.MatchString(id) {
+		return Message{}, errors.New("identificador de envio inválido")
+	}
 	q := url.Values{"requestId": {id}}
 	body := map[string]any{"text": text}
 	if thread != "" {
-		if !validThread(space, thread) { return Message{}, errors.New("a thread não pertence à conversa selecionada") }
+		if !validThread(space, thread) {
+			return Message{}, errors.New("a thread não pertence à conversa selecionada")
+		}
 		body["thread"] = Thread{Name: thread}
 		q.Set("messageReplyOption", "REPLY_MESSAGE_OR_FAIL")
 	}
 	var message Message
-	if err := s.api(ctx, accountID, http.MethodPost, space+"/messages", q, body, &message); err != nil { return Message{}, err }
+	if err := s.api(ctx, accountID, http.MethodPost, space+"/messages", q, body, &message); err != nil {
+		return Message{}, err
+	}
 	return message, nil
 }
 

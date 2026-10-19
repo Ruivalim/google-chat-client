@@ -14,9 +14,13 @@ func main() {
 	mygo.Bind(desktop)
 	mygo.App.WhenReady(func() {
 		dir, err := mygo.App.Path(mygo.PathUserData)
-		if err != nil { log.Fatal(err) }
+		if err != nil {
+			log.Fatal(err)
+		}
 		desktop.service, err = chat.Open(filepath.Join(dir, "accounts.json"), systemVault{})
-		if err != nil { log.Fatal(err) }
+		if err != nil {
+			log.Fatal(err)
+		}
 		mygo.App.SetMenu(mygo.NewMenu([]*mygo.MenuItem{
 			{Role: mygo.RoleAppMenu}, {Role: mygo.RoleEditMenu},
 			{Role: mygo.RoleViewMenu}, {Role: mygo.RoleWindowMenu},
@@ -32,5 +36,7 @@ func main() {
 		})
 	})
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { desktop.CancelLogin() })
-	if err := mygo.App.Run(); err != nil { log.Fatal(err) }
+	if err := mygo.App.Run(); err != nil {
+		log.Fatal(err)
+	}
 }

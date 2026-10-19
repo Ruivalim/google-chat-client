@@ -1,10 +1,10 @@
 package chat
 
 type Account struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Domain  string `json:"domain"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	Domain string `json:"domain"`
 }
 
 type State struct {
@@ -39,8 +39,8 @@ type Thread struct {
 }
 
 type Attachment struct {
-	ContentName  string `json:"contentName"`
-	DownloadURI  string `json:"downloadUri"`
+	ContentName string `json:"contentName"`
+	DownloadURI string `json:"downloadUri"`
 }
 
 type Message struct {

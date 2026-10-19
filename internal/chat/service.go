@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("credencial não encontrada")
+	ErrNotFound      = errors.New("credencial não encontrada")
 	accountIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,128}$`)
 )
 
@@ -43,7 +43,7 @@ type Service struct {
 func Open(path string, vault Vault) (*Service, error) {
 	s := &Service{
 		path: path, vault: vault, sessions: make(map[string]*session),
-		http: &http.Client{Timeout: 25 * time.Second},
+		http:   &http.Client{Timeout: 25 * time.Second},
 		apiURL: "https://chat.googleapis.com/v1",
 		config: config{Accounts: []Account{}},
 	}
@@ -73,7 +73,7 @@ func (s *Service) State() State {
 	defer s.mu.RUnlock()
 	return State{
 		Configured: s.config.ClientID != "", ClientID: s.config.ClientID,
-		Accounts: append([]Account{}, s.config.Accounts...),
+		Accounts:        append([]Account{}, s.config.Accounts...),
 		ActiveAccountID: s.config.ActiveAccountID,
 	}
 }

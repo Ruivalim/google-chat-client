@@ -18,15 +18,17 @@ type systemVault struct{}
 
 func (systemVault) Get(key string) ([]byte, error) {
 	data, err := mygo.Secrets.Get(key)
-	if errors.Is(err, mygo.ErrSecretNotFound) { return nil, chat.ErrNotFound }
+	if errors.Is(err, mygo.ErrSecretNotFound) {
+		return nil, chat.ErrNotFound
+	}
 	return data, err
 }
 func (systemVault) Set(key string, value []byte) error { return mygo.Secrets.Set(key, value) }
-func (systemVault) Delete(key string) error { return mygo.Secrets.Delete(key) }
+func (systemVault) Delete(key string) error            { return mygo.Secrets.Delete(key) }
 
 type Desktop struct {
-	service *chat.Service
-	mu sync.Mutex
+	service     *chat.Service
+	mu          sync.Mutex
 	loginCancel context.CancelFunc
 }
 
@@ -37,12 +39,20 @@ func (d *Desktop) ImportCredentials(ctx context.Context) (chat.State, error) {
 		Parent: mygo.CallerWindow(ctx), Title: "Importar credenciais OAuth para computador",
 		Filters: []mygo.FileFilter{{Name: "Credenciais Google (.json)", Extensions: []string{"json"}}},
 	})
-	if err != nil { return d.State(), err }
-	if len(paths) == 0 { return d.State(), nil }
+	if err != nil {
+		return d.State(), err
+	}
+	if len(paths) == 0 {
+		return d.State(), nil
+	}
 	f, err := os.Open(paths[0])
-	if err != nil { return d.State(), err }
+	if err != nil {
+		return d.State(), err
+	}
 	defer f.Close()
-	var file struct { Installed chat.Credentials `json:"installed"` }
+	var file struct {
+		Installed chat.Credentials `json:"installed"`
+	}
 	if json.NewDecoder(io.LimitReader(f, 64<<10)).Decode(&file) != nil || file.Installed.ClientID == "" {
 		return d.State(), errors.New("selecione o JSON de um cliente OAuth do tipo Aplicativo para computador, baixado no Google Cloud")
 	}
@@ -72,7 +82,9 @@ func (d *Desktop) ConnectAccount(ctx context.Context) (chat.State, error) {
 func (d *Desktop) CancelLogin() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if d.loginCancel != nil { d.loginCancel() }
+	if d.loginCancel != nil {
+		d.loginCancel()
+	}
 }
 
 func (d *Desktop) SelectAccount(accountID string) (chat.State, error) {

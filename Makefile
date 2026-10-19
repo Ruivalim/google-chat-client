@@ -7,6 +7,7 @@ MAKEFLAGS += --warn-undefined-variables --no-builtin-rules --no-print-directory
 .DELETE_ON_ERROR:
 
 APP ?= google-chat-client
+GO_DIRS := main.go desktop.go internal
 
 BOLD  :=
 CYAN  :=
@@ -56,12 +57,13 @@ generate: ## Gera a ponte TypeScript para os serviços Go
 .PHONY: fmt
 fmt: ## Formata Go, TypeScript e CSS
 	@echo "$(GREEN)▸ fmt$(RESET)"
-	gofmt -w main.go desktop.go internal/chat
+	gofmt -w $(GO_DIRS)
 	npm run fmt
 
 .PHONY: lint
-lint: generate ## Verifica tipos TypeScript e executa go vet
+lint: generate ## Verifica formatação, tipos e lint de Go e TypeScript
 	@echo "$(GREEN)▸ lint$(RESET)"
+	@unformatted="$$(gofmt -l $(GO_DIRS))"; if [ -n "$$unformatted" ]; then echo "gofmt pendente:"; echo "$$unformatted"; exit 1; fi
 	npm run lint
 	go vet ./...
 

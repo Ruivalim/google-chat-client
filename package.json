@@ -25,7 +25,7 @@
     "build": "mygo build",
     "build:all": "mygo build -platform linux/amd64,windows/amd64,darwin/universal",
     "build:web": "tsc --noEmit && vite build",
-    "lint": "tsc --noEmit",
-    "fmt": "biome format --write src index.html vite.config.ts mygo.config.ts package.json tsconfig.json"
+    "lint": "tsc --noEmit && biome check .",
+    "fmt": "biome check --write ."
   }
 }

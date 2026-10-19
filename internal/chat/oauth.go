@@ -30,8 +30,8 @@ func oauthConfig(c Credentials, redirect string) *oauth2.Config {
 		ClientID: c.ClientID, ClientSecret: c.ClientSecret, RedirectURL: redirect,
 		Scopes: scopes,
 		Endpoint: oauth2.Endpoint{
-			AuthURL: "https://accounts.google.com/o/oauth2/v2/auth",
-			TokenURL: "https://oauth2.googleapis.com/token",
+			AuthURL:   "https://accounts.google.com/o/oauth2/v2/auth",
+			TokenURL:  "https://oauth2.googleapis.com/token",
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
 	}
@@ -56,7 +56,10 @@ func (s *Service) AddAccount(parent context.Context, openBrowser func(string) er
 	state := rand.Text()
 	verifier := oauth2.GenerateVerifier()
 	cfg := oauthConfig(c, "http://"+listener.Addr().String()+"/oauth/callback")
-	type callback struct { code string; err error }
+	type callback struct {
+		code string
+		err  error
+	}
 	result := make(chan callback, 1)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /oauth/callback", func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +81,7 @@ func (s *Service) AddAccount(parent context.Context, openBrowser func(string) er
 			http.Error(w, "Este retorno já foi recebido.", http.StatusGone)
 		}
 	})
-	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5*time.Second, MaxHeaderBytes: 8192}
+	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, MaxHeaderBytes: 8192}
 	defer server.Close()
 	go func() { _ = server.Serve(listener) }()
 	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("prompt", "consent select_account"))
@@ -114,11 +117,11 @@ func (s *Service) AddAccount(parent context.Context, openBrowser func(string) er
 	}
 	defer r.Body.Close()
 	var user struct {
-		Sub string `json:"sub"`
-		Name string `json:"name"`
-		Email string `json:"email"`
-		Verified bool `json:"email_verified"`
-		Domain string `json:"hd"`
+		Sub      string `json:"sub"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Verified bool   `json:"email_verified"`
+		Domain   string `json:"hd"`
 	}
 	if r.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&user) != nil || !user.Verified || !accountIDPattern.MatchString(user.Sub) || user.Email == "" {
 		return Account{}, errors.New("o Google não retornou uma identidade de conta válida")
@@ -137,7 +140,9 @@ func (s *Service) attachAccount(a Account, token *oauth2.Token) error {
 	s.mu.RLock()
 	x := s.sessions[a.ID]
 	s.mu.RUnlock()
-	if x == nil { x = &session{} }
+	if x == nil {
+		x = &session{}
+	}
 	x.mu.Lock()
 	defer x.mu.Unlock()
 	s.mu.Lock()
@@ -148,9 +153,15 @@ func (s *Service) attachAccount(a Account, token *oauth2.Token) error {
 	next := s.config
 	next.Accounts = slices.Clone(s.config.Accounts)
 	index := slices.IndexFunc(next.Accounts, func(v Account) bool { return v.ID == a.ID })
-	if index >= 0 { next.Accounts[index] = a } else { next.Accounts = append(next.Accounts, a) }
+	if index >= 0 {
+		next.Accounts[index] = a
+	} else {
+		next.Accounts = append(next.Accounts, a)
+	}
 	next.ActiveAccountID = a.ID
-	if err := s.saveLocked(next); err != nil { return err }
+	if err := s.saveLocked(next); err != nil {
+		return err
+	}
 	x.token, x.removed = token, false
 	s.sessions[a.ID] = x
 	return nil
@@ -162,5 +173,5 @@ func requestID() string {
 	b[6] = b[6]&0x0f | 0x40
 	b[8] = b[8]&0x3f | 0x80
 	h := hex.EncodeToString(b[:])
-	return h[:8]+"-"+h[8:12]+"-"+h[12:16]+"-"+h[16:20]+"-"+h[20:]
+	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
 }
