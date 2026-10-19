@@ -790,3 +790,51 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+.guide-dialog {
+  max-width: 680px;
+}
+.guide {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 20px;
+}
+.guide > li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+.guide h2 {
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
+}
+.guide p,
+.guide ul {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.guide ul {
+  padding-left: 18px;
+}
+.guide li li + li {
+  margin-top: 6px;
+}
+.guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.guide-scopes {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--hover);
+  font-size: 0.75rem;
+}
+.guide-open {
+  margin: -4px 0 8px;
+}

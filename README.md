@@ -44,15 +44,18 @@ O `build-all` feito no Linux gera tudo, menos o instalador do Windows (precisa d
 
 ## Configurar o Google Cloud
 
-O app não vem com credencial embutida: você cria o projeto e importa o JSON.
+O app não vem com credencial embutida: você cria o projeto e importa o JSON. O mesmo passo a passo, com links para cada página do console e um botão de copiar os escopos, fica no app em **Como conectar**.
 
-1. Crie um projeto no [Google Cloud](https://console.cloud.google.com) e habilite a **Google Chat API**.
-2. Na configuração da Chat API, preencha nome, ícone e descrição do app. A documentação de autenticação de usuário trata isso como pré-requisito.
-3. Em **Google Auth Platform**:
-   - **Público:** escolha **Externo** se for usar contas de mais de uma organização. Com **Interno**, quem é de fora toma o erro `org_internal`. Adicione cada conta como usuário de teste (até 100).
-   - **Acesso a dados:** adicione os escopos da tabela abaixo.
-   - **Clientes:** crie um cliente do tipo **Aplicativo para computador** e baixe o JSON.
-4. No app: Configurações > **Importar arquivo JSON**, depois **Adicionar conta Google**. O login abre no navegador do sistema.
+1. **Crie um projeto só para este app.** Não reaproveite projeto de outra coisa: o nome que aparece no login (Branding) e as regras de acesso valem para tudo o que usa o projeto. Para ter público **Interno**, crie logado com a conta da empresa, dentro da organização dela; projeto pessoal só oferece Externo.
+2. **Ative a Google Chat API** e, na aba Configuração dela, preencha nome, URL de um ícone e descrição. A documentação de autenticação de usuário trata isso como pré-requisito.
+3. **Google Auth Platform:**
+   - **Branding:** o nome que aparece no login e seu email.
+   - **Público:** **Interno** aceita só contas da organização dona do projeto, e quem é de fora toma `org_internal`. **Externo** aceita contas de qualquer empresa.
+   - **Acesso a dados:** os escopos da tabela abaixo.
+4. **Com público Externo, escolha teste ou produção:**
+   - **Em teste**, só entra quem estiver em Público > Usuários de teste (até 100). Conta fora da lista vê "has not completed the Google verification process (...) can only be accessed by developer-approved testers". A sessão vence a cada 7 dias.
+   - **Em produção** (Público > Publicar app), a sessão não vence toda semana. Sem verificação, o login mostra a tela de app não verificado, com teto de 100 usuários na vida do projeto. A documentação diz que escopo restrito precisa de verificação em produção; se o Google bloquear o login, volte para teste.
+5. **Clientes:** crie um cliente do tipo **Aplicativo para computador**, baixe o JSON, importe no app (Configurações > **Importar arquivo JSON**) e use **Adicionar conta Google**. O login abre no navegador do sistema.
    Para fazer o login em outro navegador ou num container (do Firefox ou do Zen, por exemplo), use **Copiar link** enquanto o login está pendente e cole lá. Copie por esse botão: a URL de uma etapa já começada no navegador não funciona em outro container, e o Google responde com um erro 400.
 
 ### Mais de um projeto
@@ -73,11 +76,11 @@ Cada conta renova a sessão com as credenciais do projeto por onde entrou. Um pr
 
 ### O que esperar do Google
 
-- **Em modo de teste, a sessão vence em 7 dias.** Com público Externo e status *Testing*, o Google emite refresh token que expira em uma semana. Quando expirar, o app avisa e basta adicionar a conta de novo. Para tirar esse limite é preciso publicar o app, e aí entra a próxima linha.
-- **`chat.messages` é escopo restrito.** Publicado sem verificação, o app mostra a tela de "app não verificado" e aceita no máximo 100 usuários pela vida inteira do projeto. A verificação de escopo restrito é um processo à parte do Google.
+- **Em modo de teste, a sessão vence em 7 dias.** Com público Externo e status *Testing*, o Google emite refresh token que expira em uma semana. Quando expirar, o app avisa e basta adicionar a conta de novo. A documentação só cita essa regra para o modo de teste.
+- **`chat.messages` é escopo restrito.** Publicado sem verificação, o app mostra a tela de "app não verificado" e aceita no máximo 100 usuários pela vida inteira do projeto. A política diz que escopo restrito não pode ser usado em produção sem revisão; não achei na documentação se o Google só avisa ou bloqueia o login nesse caso, então produção é algo a testar. A verificação de escopo restrito é um processo à parte.
 - **Cada empresa pode bloquear o app.** Se o login de uma conta corporativa der `admin_policy_enforced`, o admin daquele Workspace precisa marcar o client ID como confiável em Admin console > Segurança > Acesso e controle de dados > Controles de API.
 
-Fontes: [expiração de refresh token](https://developers.google.com/identity/protocols/oauth2#expiration), [público e usuários de teste](https://support.google.com/cloud/answer/15549945), [classificação dos escopos do Chat](https://developers.google.com/workspace/chat/authenticate-authorize), [controle de apps no Workspace](https://knowledge.workspace.google.com/admin/apps/control-which-apps-access-google-workspace-data).
+Fontes: [publicação e teto de usuários](https://support.google.com/cloud/answer/15549945), [política de escopos em produção](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance), [expiração de refresh token](https://developers.google.com/identity/protocols/oauth2#expiration), [público e usuários de teste](https://support.google.com/cloud/answer/15549945), [classificação dos escopos do Chat](https://developers.google.com/workspace/chat/authenticate-authorize), [controle de apps no Workspace](https://knowledge.workspace.google.com/admin/apps/control-which-apps-access-google-workspace-data).
 
 ## O que funciona
 

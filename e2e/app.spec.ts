@@ -275,3 +275,43 @@ test("durante o login dá para copiar o link e abrir em outro container", async 
   await page.getByRole("button", { name: "Cancelar" }).click();
   expect(await calls(page, "CancelLogin")).toHaveLength(1);
 });
+
+test.describe("passo a passo de conexão", () => {
+  test("abre pela tela inicial, copia os escopos e leva às páginas do console", async ({ page }) => {
+    await withBridge(page, { configured: false });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Como conectar" }).click();
+    const guide = page.getByRole("dialog", { name: "Como conectar" });
+    await expect(guide.getByRole("heading", { name: "Com público Externo: teste ou produção" })).toBeVisible();
+
+    await guide.getByRole("button", { name: "Copiar escopos" }).click();
+    await expect(guide.getByRole("button", { name: "Escopos copiados" })).toBeVisible();
+    const [copy] = await calls(page, "CopyText");
+    expect(String(copy.args[0]).split("\n")).toEqual([
+      "openid",
+      "email",
+      "profile",
+      "https://www.googleapis.com/auth/chat.spaces.readonly",
+      "https://www.googleapis.com/auth/chat.memberships.readonly",
+      "https://www.googleapis.com/auth/chat.messages",
+    ]);
+
+    await guide.getByRole("button", { name: "Público" }).click();
+    await guide.getByRole("button", { name: "Clientes" }).click();
+    expect((await calls(page, "OpenLink")).map((c) => c.args[0])).toEqual([
+      "https://console.cloud.google.com/auth/audience",
+      "https://console.cloud.google.com/auth/clients",
+    ]);
+    await guide.getByRole("button", { name: "Entendi" }).click();
+    await expect(guide).toHaveCount(0);
+  });
+
+  test("abre pelas configurações", async ({ page }) => {
+    await withBridge(page);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    await page.getByRole("button", { name: "Como conectar: passo a passo" }).click();
+    await expect(page.getByRole("dialog", { name: "Configurações" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Como conectar" })).toBeVisible();
+  });
+});

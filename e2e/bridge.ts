@@ -119,6 +119,7 @@ function install(scenario: Scenario) {
           loginPolls += 1;
           return loginPolls < 3 ? "" : "https://accounts.google.com/o/oauth2/v2/auth?client_id=teste";
         case "CopyLoginURL":
+        case "CopyText":
           return undefined;
         case "RemoveProject":
           if (state.accounts.some((a) => a.clientId === args[0]))

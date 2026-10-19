@@ -28,6 +28,7 @@ import {
   Dismiss24Regular,
   Open24Regular,
   People24Regular,
+  QuestionCircle24Regular,
   Search24Regular,
   Send24Regular,
   Settings24Regular,
@@ -163,6 +164,156 @@ function LoginPending({ size }: { size?: "small" }) {
   );
 }
 
+const scopes = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/chat.spaces.readonly",
+  "https://www.googleapis.com/auth/chat.memberships.readonly",
+  "https://www.googleapis.com/auth/chat.messages",
+];
+
+const consoleURL = "https://console.cloud.google.com";
+
+function GuideLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Button size="small" appearance="subtle" icon={<Open24Regular />} onClick={() => void openLink(href)}>
+      {children}
+    </Button>
+  );
+}
+
+// Passo a passo do Google Cloud. O que está aqui foi conferido na documentação
+// do Google em outubro de 2026; o README traz as fontes.
+function ConnectGuide({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  function copyScopes() {
+    const text = scopes.join("\n");
+    const done = () => setCopied(true);
+    if (native)
+      void Desktop.copyText(text)
+        .then(done)
+        .catch(() => undefined);
+    else
+      void navigator.clipboard
+        ?.writeText(text)
+        .then(done)
+        .catch(() => undefined);
+  }
+  return (
+    <Dialog open={open} onOpenChange={(_, data) => !data.open && onClose()}>
+      <DialogSurface className="settings-dialog guide-dialog">
+        <DialogBody>
+          <DialogTitle
+            action={
+              <IconButton label="Fechar passo a passo" appearance="subtle" onClick={onClose}>
+                <Dismiss24Regular />
+              </IconButton>
+            }
+          >
+            Como conectar
+          </DialogTitle>
+          <DialogContent>
+            <ol className="guide">
+              <li>
+                <h2>Crie um projeto só para este app</h2>
+                <p>
+                  Não reaproveite projeto de outra coisa: o nome que aparece no login e as regras de acesso valem para
+                  tudo o que usa o projeto. Para ter público <strong>Interno</strong>, crie logado com a conta da
+                  empresa, dentro da organização dela; projeto pessoal só oferece Externo.
+                </p>
+                <GuideLink href={`${consoleURL}/projectcreate`}>Criar projeto</GuideLink>
+              </li>
+              <li>
+                <h2>Ative a Google Chat API e configure o app de Chat</h2>
+                <p>
+                  Depois de ativar, abra a aba <strong>Configuração</strong> da API e preencha nome, URL de um ícone e
+                  descrição. Não precisa ligar nenhum recurso interativo.
+                </p>
+                <div className="guide-links">
+                  <GuideLink href={`${consoleURL}/apis/library/chat.googleapis.com`}>Ativar a API</GuideLink>
+                  <GuideLink href={`${consoleURL}/apis/api/chat.googleapis.com/hangouts-chat`}>Configuração</GuideLink>
+                </div>
+              </li>
+              <li>
+                <h2>Configure o Google Auth Platform</h2>
+                <ul>
+                  <li>
+                    <strong>Branding:</strong> o nome que aparece na tela de login, como "Google Chat Client", e seu
+                    email.
+                  </li>
+                  <li>
+                    <strong>Público:</strong> <strong>Interno</strong> aceita só contas da organização dona do projeto,
+                    sem lista de teste. <strong>Externo</strong> aceita contas de qualquer empresa.
+                  </li>
+                  <li>
+                    <strong>Acesso a dados:</strong> adicione os escopos abaixo. Dá para colar a lista em "Adicionar
+                    escopos manualmente".
+                  </li>
+                </ul>
+                <code className="guide-scopes">{scopes.join("\n")}</code>
+                <div className="guide-links">
+                  <Button size="small" icon={<Copy24Regular />} onClick={copyScopes}>
+                    {copied ? "Escopos copiados" : "Copiar escopos"}
+                  </Button>
+                  <GuideLink href={`${consoleURL}/auth/branding`}>Branding</GuideLink>
+                  <GuideLink href={`${consoleURL}/auth/audience`}>Público</GuideLink>
+                  <GuideLink href={`${consoleURL}/auth/scopes`}>Acesso a dados</GuideLink>
+                </div>
+              </li>
+              <li>
+                <h2>Com público Externo: teste ou produção</h2>
+                <ul>
+                  <li>
+                    <strong>Em teste</strong>, só entra quem estiver em Público &gt; Usuários de teste. Conta fora da
+                    lista vê "has not completed the Google verification process (...) can only be accessed by
+                    developer-approved testers". A sessão vence a cada 7 dias e a conta precisa ser adicionada de novo.
+                  </li>
+                  <li>
+                    <strong>Em produção</strong> (Público &gt; Publicar app), a sessão não vence toda semana. Sem
+                    verificação, o login mostra a tela de app não verificado, e o projeto aceita até 100 usuários na
+                    vida inteira dele. A documentação do Google diz que escopo restrito, caso do{" "}
+                    <code>chat.messages</code>, precisa de verificação em produção; se o login for bloqueado, volte para
+                    teste.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <h2>Crie o cliente e importe aqui</h2>
+                <p>
+                  Em <strong>Clientes</strong>, crie um cliente do tipo <strong>Aplicativo para computador</strong>,
+                  baixe o JSON e use <strong>Importar arquivo JSON</strong> nas configurações. Depois, Adicionar conta.
+                  Para entrar por outro navegador ou container, use <strong>Copiar link</strong> enquanto o login está
+                  pendente.
+                </p>
+                <GuideLink href={`${consoleURL}/auth/clients`}>Clientes</GuideLink>
+              </li>
+              <li>
+                <h2>Se uma empresa bloquear o app</h2>
+                <p>
+                  O erro de bloqueio do administrador quer dizer que aquele Workspace restringe apps de terceiros. O
+                  admin de lá libera o client ID em Admin console &gt; Segurança &gt; Acesso e controle de dados &gt;
+                  Controles de API, marcando o app como <strong>Confiável</strong>.
+                </p>
+              </li>
+            </ol>
+          </DialogContent>
+          <DialogActions>
+            <Button appearance="primary" onClick={onClose}>
+              Entendi
+            </Button>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
+  );
+}
+
 function Notice({ children }: { children: ReactNode }) {
   return (
     <MessageBar intent="error" layout="multiline">
@@ -178,6 +329,7 @@ export function App() {
   const [starting, setStarting] = useState(native);
   const [error, setError] = useState("");
   const [settings, setSettings] = useState(false);
+  const [guide, setGuide] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [removing, setRemoving] = useState("");
@@ -421,7 +573,7 @@ export function App() {
                       Importar credenciais Google
                     </Button>
                   )}
-                  <Button appearance="subtle" onClick={() => setSettings(true)}>
+                  <Button appearance="subtle" onClick={() => setGuide(true)}>
                     Como conectar
                   </Button>
                 </div>
@@ -440,6 +592,7 @@ export function App() {
             </div>
           )}
         </main>
+        <ConnectGuide open={guide} onClose={() => setGuide(false)} />
         <Dialog open={settings} onOpenChange={(_, data) => setSettings(data.open)}>
           <DialogSurface className="settings-dialog">
             <DialogBody>
@@ -492,10 +645,20 @@ export function App() {
                 <section className="settings-section">
                   <h2>Projetos Google Cloud</h2>
                   <p>
-                    Habilite a Google Chat API e crie um cliente OAuth do tipo{" "}
-                    <strong>Aplicativo para computador</strong>. Baixe o JSON e importe aqui. Dá para importar mais de
-                    um: cada conta entra pelo projeto que você escolher.
+                    Cada JSON importado é um projeto, e cada conta entra pelo projeto que você escolher. Para criar um,
+                    siga o passo a passo.
                   </p>
+                  <Button
+                    className="guide-open"
+                    appearance="subtle"
+                    icon={<QuestionCircle24Regular />}
+                    onClick={() => {
+                      setSettings(false);
+                      setGuide(true);
+                    }}
+                  >
+                    Como conectar: passo a passo
+                  </Button>
                   {state.projects.map((p) => {
                     const count = accountsOf(p.clientId);
                     return (
@@ -545,11 +708,6 @@ export function App() {
                       Abrir Google Cloud
                     </Button>
                   </div>
-                  <p>
-                    Um projeto com público <strong>Externo</strong> aceita contas de várias organizações, cada uma
-                    cadastrada como usuária de teste. Nesse modo o Google encerra a sessão a cada 7 dias. Na empresa em
-                    que você é admin, um projeto próprio com público <strong>Interno</strong> não tem esse limite.
-                  </p>
                   <p>
                     O login pode depender da liberação do aplicativo pelo administrador do Workspace. As credenciais
                     ficam no chaveiro do sistema.

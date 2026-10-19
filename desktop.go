@@ -101,6 +101,15 @@ func (d *Desktop) LoginURL() string {
 	return d.loginURL
 }
 
+// CopyText põe texto curto na área de transferência, como a lista de escopos
+// do passo a passo.
+func (d *Desktop) CopyText(text string) error {
+	if text == "" || len(text) > 4096 {
+		return errors.New("texto vazio ou grande demais para copiar")
+	}
+	return mygo.Clipboard.Write(transfer.TextData(text))
+}
+
 func (d *Desktop) CopyLoginURL() error {
 	u := d.LoginURL()
 	if u == "" {
