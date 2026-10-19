@@ -22,6 +22,8 @@ declare global {
       calls: Call[];
       failOnce: Record<string, string>;
       state: { activeAccountId: string; projects: { clientId: string }[]; accounts: { clientId: string }[] };
+      // dispara um evento como se viesse do Go
+      emit: (name: string, payload: unknown) => void;
     };
   }
 }
@@ -38,7 +40,13 @@ function install(scenario: Scenario) {
   ]
     .slice(0, projects.length ? (scenario.accounts ?? 2) : 0)
     .map((a, i) => ({ ...a, clientId: projects[Math.min(i, projects.length - 1)].clientId }));
-  let state = { projects, accounts, activeAccountId: accounts[0]?.id ?? "" };
+  let state = {
+    projects,
+    accounts,
+    activeAccountId: accounts[0]?.id ?? "",
+    notifications: { on: true, every: 60 },
+  };
+  const listeners = new Map<string, Set<(payload: unknown) => void>>();
   const iso = (minutes: number) => new Date(Date.UTC(2026, 9, 19, 12, 0) - minutes * 60000).toISOString();
   const spaces = (account: string) => [
     {
@@ -76,12 +84,20 @@ function install(scenario: Scenario) {
     calls: [] as { method: string; args: unknown[] }[],
     failOnce: { ...(scenario.failOnce ?? {}) },
     state,
+    emit: (name: string, payload: unknown) => {
+      for (const fn of listeners.get(name) ?? []) fn(payload);
+    },
   };
   let sent = 0;
   let loginPolls = 0;
   const posted: ReturnType<typeof message>[] = [];
   (globalThis as unknown as { bridge: typeof bridge }).bridge = bridge;
   (globalThis as unknown as { mygo: unknown }).mygo = {
+    on: (name: string, fn: (payload: unknown) => void) => {
+      if (!listeners.has(name)) listeners.set(name, new Set());
+      listeners.get(name)?.add(fn);
+      return () => listeners.get(name)?.delete(fn);
+    },
     call: async (method: string, ...args: unknown[]) => {
       const name = method.replace("Desktop.", "");
       bridge.calls.push({ method: name, args });
@@ -120,7 +136,14 @@ function install(scenario: Scenario) {
           return loginPolls < 3 ? "" : "https://accounts.google.com/o/oauth2/v2/auth?client_id=teste";
         case "CopyLoginURL":
         case "CopyText":
+        case "SetOpenConversation":
           return undefined;
+        case "Unread":
+          return [];
+        case "SetNotifications":
+          state = { ...state, notifications: args[0] as typeof state.notifications };
+          bridge.state = state;
+          return state;
         case "RemoveProject":
           if (state.accounts.some((a) => a.clientId === args[0]))
             throw new Error("remova as contas deste projeto antes");

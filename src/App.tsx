@@ -13,6 +13,7 @@ import {
   MessageBarBody,
   Select,
   Spinner,
+  Switch,
   Tooltip,
   webDarkTheme,
   webLightTheme,
@@ -37,13 +38,36 @@ import {
 } from "@fluentui/react-icons";
 import { isMyGo } from "mygo-runtime";
 import { type ReactElement, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type Account, Desktop, type Message, type Project, type Space, type State } from "./mygo";
+import {
+  type Account,
+  type Activity,
+  Desktop,
+  events,
+  type Message,
+  type Notifications,
+  type Project,
+  type Space,
+  type State,
+  type Unread,
+} from "./mygo";
 
 const emptyState: State = {
   projects: [],
   accounts: [],
   activeAccountId: "",
+  notifications: { on: true, every: 60 },
 };
+
+// Os mesmos valores de chat.CheckIntervals; o Go recusa qualquer outro.
+const checkIntervals: [number, string][] = [
+  [15, "15 segundos"],
+  [30, "30 segundos"],
+  [60, "1 minuto"],
+  [120, "2 minutos"],
+  [300, "5 minutos"],
+];
+
+type OpenRequest = { activity: Activity; n: number };
 const native = isMyGo();
 const drafts = new Map<string, { text: string; requestId: string }>();
 const selectedSpaces = new Map<string, Space>();
@@ -333,6 +357,8 @@ export function App() {
   const [error, setError] = useState("");
   const [settings, setSettings] = useState(false);
   const [guide, setGuide] = useState(false);
+  const [unread, setUnread] = useState<Unread[]>([]);
+  const [openRequest, setOpenRequest] = useState<OpenRequest | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [removing, setRemoving] = useState("");
@@ -351,6 +377,12 @@ export function App() {
         colorBrandForeground1: "#77dfb5",
         colorBrandForeground2: "#a2edd0",
         colorBrandStroke1: "#77dfb5",
+        colorCompoundBrandBackground: "#23875f",
+        colorCompoundBrandBackgroundHover: "#2a9d72",
+        colorCompoundBrandBackgroundPressed: "#1c7350",
+        colorCompoundBrandStroke: "#3fbf8f",
+        colorCompoundBrandStrokeHover: "#5fd0a5",
+        colorCompoundBrandForeground1: "#77dfb5",
       }
     : {
         ...webLightTheme,
@@ -360,8 +392,33 @@ export function App() {
         colorBrandForeground1: "#006b4c",
         colorBrandForeground2: "#00513a",
         colorBrandStroke1: "#006b4c",
+        colorCompoundBrandBackground: "#006b4c",
+        colorCompoundBrandBackgroundHover: "#00513a",
+        colorCompoundBrandBackgroundPressed: "#003b2a",
+        colorCompoundBrandStroke: "#006b4c",
+        colorCompoundBrandStrokeHover: "#00513a",
+        colorCompoundBrandForeground1: "#006b4c",
       };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: select só usa refs e setState funcional
+  useEffect(() => {
+    if (!native) return;
+    Desktop.unread()
+      .then(setUnread)
+      .catch(() => undefined);
+    const offUnread = events.unreadChanged.on(setUnread);
+    // Clique numa notificação: troca para a conta e abre a conversa.
+    const offOpen = events.openConversation.on((activity) => {
+      setSettings(false);
+      setGuide(false);
+      void select(activity.accountId);
+      setOpenRequest((current) => ({ activity, n: (current?.n ?? 0) + 1 }));
+    });
+    return () => {
+      offUnread();
+      offOpen();
+    };
+  }, []);
   useEffect(() => {
     if (!native) return;
     Desktop.state()
@@ -451,6 +508,15 @@ export function App() {
     }
   }
 
+  async function saveNotifications(next: Notifications) {
+    setError("");
+    try {
+      setState(await Desktop.setNotifications(next));
+    } catch (err) {
+      setError(describe(err));
+    }
+  }
+
   async function removeProject(clientId: string) {
     setRemoving(clientId);
     setError("");
@@ -464,6 +530,8 @@ export function App() {
   }
 
   const configured = state.projects.length > 0;
+  const unreadOf = (accountId: string) =>
+    unread.filter((u) => u.accountId === accountId).reduce((sum, u) => sum + u.count, 0);
   const manyProjects = state.projects.length > 1;
   const accountsOf = (clientId: string) => state.accounts.filter((a) => a.clientId === clientId).length;
   const projectOf = (a: Account) => state.projects.find((p) => p.clientId === a.clientId);
@@ -487,10 +555,15 @@ export function App() {
                   type="button"
                   className={`account-button ${account?.id === a.id ? "selected" : ""}`}
                   aria-pressed={account?.id === a.id}
-                  aria-label={`Usar ${a.email}`}
+                  aria-label={`Usar ${a.email}${unreadOf(a.id) ? `, ${unreadOf(a.id)} não lidas` : ""}`}
                   onClick={() => void select(a.id)}
                 >
                   <AccountAvatar account={a} size={36} />
+                  {unreadOf(a.id) > 0 && (
+                    <span className="unread-badge" aria-hidden>
+                      {unreadOf(a.id) > 99 ? "99+" : unreadOf(a.id)}
+                    </span>
+                  )}
                 </button>
               </Tooltip>
             ))}
@@ -532,7 +605,13 @@ export function App() {
               <Spinner label="Carregando suas contas" />
             </div>
           ) : account ? (
-            <Workspace key={account.id} account={account} onSettings={() => setSettings(true)} />
+            <Workspace
+              key={account.id}
+              account={account}
+              unread={unread}
+              openRequest={openRequest?.activity.accountId === account.id ? openRequest : null}
+              onSettings={() => setSettings(true)}
+            />
           ) : (
             <div className="welcome">
               <div className="welcome-heading">
@@ -716,6 +795,36 @@ export function App() {
                     ficam no chaveiro do sistema.
                   </p>
                 </section>
+                <section className="settings-section">
+                  <h2>Notificações</h2>
+                  <p>
+                    O app procura mensagens novas em todas as contas e avisa pelo sistema. Funciona enquanto ele está
+                    aberto; a conversa que você está olhando não gera aviso.
+                  </p>
+                  <div className="notification-setting">
+                    <Switch
+                      label="Avisar mensagens novas"
+                      checked={state.notifications.on}
+                      disabled={!native}
+                      onChange={(_, data) => void saveNotifications({ ...state.notifications, on: data.checked })}
+                    />
+                    <label htmlFor="check-every">Verificar a cada</label>
+                    <Select
+                      id="check-every"
+                      value={String(state.notifications.every)}
+                      disabled={!native || !state.notifications.on}
+                      onChange={(_, data) =>
+                        void saveNotifications({ ...state.notifications, every: Number(data.value) })
+                      }
+                    >
+                      {checkIntervals.map(([seconds, label]) => (
+                        <option key={seconds} value={seconds}>
+                          {label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                </section>
                 <section className="settings-section appearance-setting">
                   <label htmlFor="appearance">Aparência</label>
                   <Select
@@ -742,7 +851,17 @@ export function App() {
   );
 }
 
-function Workspace({ account, onSettings }: { account: Account; onSettings: () => void }) {
+function Workspace({
+  account,
+  unread,
+  openRequest,
+  onSettings,
+}: {
+  account: Account;
+  unread: Unread[];
+  openRequest: OpenRequest | null;
+  onSettings: () => void;
+}) {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [cursor, setCursor] = useState("");
   const [loading, setLoading] = useState(true);
@@ -787,6 +906,21 @@ function Workspace({ account, onSettings }: { account: Account; onSettings: () =
     setSelected(space);
     setThread("");
   }
+  // O Go não avisa da conversa que está na tela e zera as não lidas dela.
+  useEffect(() => {
+    if (!native) return;
+    void Desktop.setOpenConversation(account.id, selected?.name ?? "");
+    return () => void Desktop.setOpenConversation("", "");
+  }, [account.id, selected?.name]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: o pedido muda a cada clique em notificação (n)
+  useEffect(() => {
+    if (!openRequest) return;
+    const space = openRequest.activity.space;
+    // A conversa pode ainda não estar na página carregada da lista.
+    setSpaces((old) => (old.some((s) => s.name === space.name) ? old : [space, ...old]));
+    select(space);
+  }, [openRequest?.n]);
+  const unreadIn = (space: string) => unread.find((u) => u.accountId === account.id && u.space === space)?.count ?? 0;
   async function more() {
     setLoadingMore(true);
     setError("");
@@ -880,6 +1014,12 @@ function Workspace({ account, onSettings }: { account: Account; onSettings: () =
                         : "Conversa direta"}
                   </span>
                 </span>
+                {unreadIn(s.name) > 0 && selected?.name !== s.name && (
+                  <span className="unread-badge inline">
+                    {unreadIn(s.name)}
+                    <span className="sr-only"> não lidas</span>
+                  </span>
+                )}
               </button>
             ))
           ) : (

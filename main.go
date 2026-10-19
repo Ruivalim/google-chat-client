@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"path/filepath"
 
@@ -36,6 +37,12 @@ func main() {
 			e.PreventDefault()
 			go func() { _ = desktop.OpenLink(e.URL) }()
 		})
+		desktop.watcher = chat.NewWatcher(desktop.service,
+			func(a chat.Activity) { desktop.notify(win, a) },
+			func(u []chat.Unread) { _ = UnreadChanged.Emit(win, u) },
+			win.IsFocused,
+		)
+		go desktop.watcher.Run(context.Background())
 	})
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { desktop.CancelLogin() })
 	if err := mygo.App.Run(); err != nil {

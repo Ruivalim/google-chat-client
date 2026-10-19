@@ -18,9 +18,17 @@ type Project struct {
 }
 
 type State struct {
-	Projects        []Project `json:"projects"`
-	Accounts        []Account `json:"accounts"`
-	ActiveAccountID string    `json:"activeAccountId"`
+	Projects        []Project     `json:"projects"`
+	Accounts        []Account     `json:"accounts"`
+	ActiveAccountID string        `json:"activeAccountId"`
+	Notifications   Notifications `json:"notifications"`
+}
+
+// Notifications diz se o app procura mensagens novas e de quantos em quantos
+// segundos.
+type Notifications struct {
+	On    bool `json:"on"`
+	Every int  `json:"every"`
 }
 
 type Space struct {
@@ -73,6 +81,9 @@ type config struct {
 	Projects        []Project `json:"projects"`
 	Accounts        []Account `json:"accounts"`
 	ActiveAccountID string    `json:"activeAccountId"`
+	// Zero nos dois quer dizer o padrão: ligado, a cada minuto.
+	NotificationsOff bool `json:"notificationsOff,omitempty"`
+	CheckEvery       int  `json:"checkEvery,omitempty"`
 	// LegacyClientID é o formato antigo, de um projeto só. Open migra.
 	LegacyClientID string `json:"clientId,omitempty"`
 }

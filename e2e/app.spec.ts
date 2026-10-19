@@ -333,3 +333,71 @@ test("aviso com URL longa quebra linha e o link abre no navegador", async ({ pag
   await notice.getByRole("link", { name: url }).click();
   await expect.poll(() => calls(page, "OpenLink")).toEqual([{ method: "OpenLink", args: [url] }]);
 });
+
+test.describe("notificações e não lidas", () => {
+  const unread = [
+    { accountId: "111", space: "spaces/dm111", count: 3 },
+    { accountId: "222", space: "spaces/team222", count: 2 },
+  ];
+
+  test("contadores na faixa e na lista, e abrir a conversa avisa o Go", async ({ page }) => {
+    await withBridge(page);
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: /Bruno Lima/ })).toBeVisible();
+    await page.evaluate((u) => window.bridge.emit("unread:changed", u), unread);
+
+    await expect(account(page, "ana@empresa-a.com, 3 não lidas")).toBeVisible();
+    await expect(account(page, "ana@consultoria-b.com.br, 2 não lidas")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Bruno Lima Conversa direta 3 não lidas" })).toBeVisible();
+
+    await page.getByRole("button", { name: /Bruno Lima/ }).click();
+    await expect
+      .poll(async () => (await calls(page, "SetOpenConversation")).at(-1)?.args)
+      .toEqual(["111", "spaces/dm111"]);
+    await expect(page.getByRole("button", { name: /Bruno Lima/ }).locator(".unread-badge")).toHaveCount(0);
+  });
+
+  test("clicar na notificação troca de conta e abre a conversa, mesmo fora da lista", async ({ page }) => {
+    await withBridge(page);
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: /Bruno Lima/ })).toBeVisible();
+    const space = {
+      name: "spaces/nova222",
+      displayName: "Carla Dias",
+      spaceType: "DIRECT_MESSAGE",
+      spaceThreadingState: "UNTHREADED_MESSAGES",
+      lastActiveTime: new Date().toISOString(),
+      spaceUri: "",
+    };
+    await page.evaluate(
+      (s) => window.bridge.emit("open:conversation", { accountId: "222", space: s, message: {} }),
+      space,
+    );
+
+    await expect(account(page, "ana@consultoria-b.com.br")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("heading", { name: "Carla Dias" })).toBeVisible();
+    await expect
+      .poll(async () => (await calls(page, "Messages")).at(-1)?.args.slice(0, 2))
+      .toEqual(["222", "spaces/nova222"]);
+  });
+
+  test("configurações ligam, desligam e mudam o intervalo", async ({ page }) => {
+    await withBridge(page);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Configurações e contas" }).click();
+    const dialog = page.getByRole("dialog", { name: "Configurações" });
+    const every = dialog.getByLabel("Verificar a cada");
+    await expect(every).toHaveValue("60");
+
+    await every.selectOption("15");
+    await expect
+      .poll(async () => (await calls(page, "SetNotifications")).at(-1)?.args[0])
+      .toEqual({ on: true, every: 15 });
+
+    await dialog.getByRole("switch", { name: "Avisar mensagens novas" }).click();
+    await expect
+      .poll(async () => (await calls(page, "SetNotifications")).at(-1)?.args[0])
+      .toEqual({ on: false, every: 15 });
+    await expect(every).toBeDisabled();
+  });
+});

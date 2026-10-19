@@ -842,3 +842,39 @@ a {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.account-button {
+  position: relative;
+}
+.unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #c4314b;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid var(--rail, var(--canvas));
+}
+.unread-badge.inline {
+  position: static;
+  margin-left: auto;
+  border: 0;
+}
+.notification-setting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.notification-setting label[for="check-every"] {
+  margin-left: auto;
+  font-size: 0.8125rem;
+}

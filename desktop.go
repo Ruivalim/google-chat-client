@@ -36,6 +36,7 @@ type Desktop struct {
 	service     *chat.Service
 	mu          sync.Mutex
 	loginCancel context.CancelFunc
+	watcher     *chat.Watcher
 	// loginURL é o endereço do login em andamento, para copiar e abrir em outro
 	// navegador ou container. Vazio fora de um login.
 	loginURL string

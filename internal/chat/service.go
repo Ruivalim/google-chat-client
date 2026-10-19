@@ -85,11 +85,33 @@ func Open(path string, vault Vault) (*Service, error) {
 func (s *Service) State() State {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	every := s.config.CheckEvery
+	if !slices.Contains(CheckIntervals, every) {
+		every = defaultCheckEvery
+	}
 	return State{
 		Projects:        append([]Project{}, s.config.Projects...),
 		Accounts:        append([]Account{}, s.config.Accounts...),
 		ActiveAccountID: s.config.ActiveAccountID,
+		Notifications:   Notifications{On: !s.config.NotificationsOff, Every: every},
 	}
+}
+
+// CheckIntervals são os intervalos, em segundos, que as configurações oferecem.
+// Menos de 15 gasta cota à toa: são duas chamadas por conta a cada rodada.
+var CheckIntervals = []int{15, 30, 60, 120, 300}
+
+const defaultCheckEvery = 60
+
+func (s *Service) SetNotifications(n Notifications) error {
+	if !slices.Contains(CheckIntervals, n.Every) {
+		return errors.New("escolha um dos intervalos oferecidos")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	next := s.config
+	next.NotificationsOff, next.CheckEvery = !n.On, n.Every
+	return s.saveLocked(next)
 }
 
 func (s *Service) saveLocked(next config) error {
