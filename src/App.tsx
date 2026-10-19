@@ -233,7 +233,8 @@ function ConnectGuide({ open, onClose }: { open: boolean; onClose: () => void })
                 <h2>Ative a Google Chat API e configure o app de Chat</h2>
                 <p>
                   Depois de ativar, abra a aba <strong>Configuração</strong> da API e preencha nome, URL de um ícone e
-                  descrição. Não precisa ligar nenhum recurso interativo.
+                  descrição. Não precisa ligar nenhum recurso interativo. Sem essa configuração as conversas abrem, mas
+                  o envio falha com "Google Chat app not found".
                 </p>
                 <div className="guide-links">
                   <GuideLink href={`${consoleURL}/apis/library/chat.googleapis.com`}>Ativar a API</GuideLink>

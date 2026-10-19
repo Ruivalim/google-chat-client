@@ -47,7 +47,7 @@ O `build-all` feito no Linux gera tudo, menos o instalador do Windows (precisa d
 O app não vem com credencial embutida: você cria o projeto e importa o JSON. O mesmo passo a passo, com links para cada página do console e um botão de copiar os escopos, fica no app em **Como conectar**.
 
 1. **Crie um projeto só para este app.** Não reaproveite projeto de outra coisa: o nome que aparece no login (Branding) e as regras de acesso valem para tudo o que usa o projeto. Para ter público **Interno**, crie logado com a conta da empresa, dentro da organização dela; projeto pessoal só oferece Externo.
-2. **Ative a Google Chat API** e, na aba Configuração dela, preencha nome, URL de um ícone e descrição. A documentação de autenticação de usuário trata isso como pré-requisito.
+2. **Ative a Google Chat API** e, na aba Configuração dela, preencha nome, URL de um ícone e descrição. Sem a API ativada nada funciona (`SERVICE_DISABLED`). Sem a configuração, a leitura funciona mas o envio falha com "Google Chat app not found".
 3. **Google Auth Platform:**
    - **Branding:** o nome que aparece no login e seu email.
    - **Público:** **Interno** aceita só contas da organização dona do projeto, e quem é de fora toma `org_internal`. **Externo** aceita contas de qualquer empresa.
@@ -102,11 +102,11 @@ Fontes: [publicação e teto de usuários](https://support.google.com/cloud/answ
 
 ## O que falta
 
-Para o primeiro login real, conferir:
+No primeiro login real (Workspace, projeto Externo em teste) já funcionaram: login, lista de conversas, histórico paginado, nome dos remetentes e reconhecimento das próprias mensagens. Falta conferir:
 
-- Nome das DMs e dos remetentes com dado de verdade.
-- Se o ID do Chat bate com o `sub` da conta. O app compara os dois para saber quais mensagens são suas; a documentação não garante isso. Ver [docs/google-chat-api.md](docs/google-chat-api.md).
-- Envio, resposta em thread, remover e reconectar conta.
+- Nome das DMs e dos grupos na lista de conversas.
+- Envio e resposta em thread, depois de configurar o app de Chat.
+- Remover e reconectar conta.
 - Login de uma segunda organização no mesmo projeto Externo, e de uma conta por um projeto Interno.
 - Instaladores rodando de fato no Windows e no macOS (até agora só foram compilados).
 

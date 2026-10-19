@@ -23,13 +23,14 @@ Fontes: [métodos e escopos](https://developers.google.com/workspace/chat/authen
 
 ## Nome e email de quem escreve
 
-Com autenticação de usuário, `sender.displayName` e `sender.email` vêm preenchidos quando a pessoa é membro do espaço ou já tem afinidade com quem chama (uma DM, por exemplo). Fora disso a API devolve só `name` (`users/{id}`) e `type`, e `isAnonymous` marca perfil apagado ou invisível. O catálogo diz que o `{id}` é o mesmo da People API e da Directory API. O app supõe que também é o `sub` do OpenID Connect (o ID da conta Google) e compara com ele para reconhecer as próprias mensagens e tirar a própria pessoa do nome das DMs. Isso não está escrito na documentação e precisa ser conferido no primeiro login real.
+Com autenticação de usuário, `sender.displayName` e `sender.email` vêm preenchidos quando a pessoa é membro do espaço ou já tem afinidade com quem chama (uma DM, por exemplo). Fora disso a API devolve só `name` (`users/{id}`) e `type`, e `isAnonymous` marca perfil apagado ou invisível. O catálogo diz que o `{id}` é o mesmo da People API e da Directory API. Ele também é o `sub` do OpenID Connect (o ID da conta Google): a documentação não diz isso, mas o primeiro login real confirmou, e é com ele que o app reconhece as próprias mensagens e tira a própria pessoa do nome das DMs.
 
 ## O que não existe
 
 - Indicador de digitação: não há método no catálogo v1.
 - Presença dos colegas: a API de disponibilidade devolve só o estado do próprio usuário.
 - Paridade completa com o cliente Google: avisos de sistema e cards de apps não vêm inteiros no histórico.
+- Aceitar convite para espaço: a membership tem o estado `INVITED`, mas não há método de aceitar com autenticação de usuário, e `spaces.list` só lista espaços de que a pessoa já é membro.
 - Notificação com o app fechado: depende de algo recebendo eventos, o que hoje não existe.
 
 Fonte: [disponibilidade do usuário](https://developers.google.com/workspace/chat/api/reference/rest/v1/users.availability/get).
