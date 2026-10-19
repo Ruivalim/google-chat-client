@@ -33,7 +33,12 @@ func (d *Desktop) notify(win *mygo.Window, a chat.Activity) {
 			}
 		}
 	}
-	n := mygo.NewNotification(mygo.NotificationOptions{Title: title, Body: preview(a.Message)})
+	// Mesmo ID por conversa: a mensagem nova substitui o aviso anterior dela
+	// em vez de empilhar.
+	n := mygo.NewNotification(mygo.NotificationOptions{
+		ID: a.AccountID + "|" + a.Space.Name, Group: a.Space.Name,
+		Title: title, Body: preview(a.Message),
+	})
 	n.OnClick(func() {
 		win.Show()
 		win.Focus()
@@ -70,6 +75,25 @@ func preview(m chat.Message) string {
 		return string([]rune(text)[:179]) + "…"
 	}
 	return text
+}
+
+// unreadChanged leva as não lidas para a janela e para a dica da bandeja.
+func (d *Desktop) unreadChanged(win *mygo.Window, list []chat.Unread) {
+	_ = UnreadChanged.Emit(win, list)
+	if d.tray == nil {
+		return
+	}
+	total := 0
+	for _, u := range list {
+		total += u.Count
+	}
+	tip := "Google Chat Client"
+	if total == 1 {
+		tip += " · 1 mensagem não lida"
+	} else if total > 1 {
+		tip += fmt.Sprintf(" · %d mensagens não lidas", total)
+	}
+	d.tray.SetToolTip(tip)
 }
 
 func (d *Desktop) Unread() []chat.Unread {

@@ -37,6 +37,7 @@ type Desktop struct {
 	mu          sync.Mutex
 	loginCancel context.CancelFunc
 	watcher     *chat.Watcher
+	tray        *mygo.Tray
 	picked      map[string]string // arquivos escolhidos no diálogo, por ID
 	// loginURL é o endereço do login em andamento, para copiar e abrir em outro
 	// navegador ou container. Vazio fora de um login.

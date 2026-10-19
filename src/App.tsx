@@ -27,7 +27,6 @@ import {
   ArrowUpload24Regular,
   Attach24Regular,
   Chat24Regular,
-  ChatMultiple24Regular,
   Copy24Regular,
   Dismiss24Regular,
   Document24Regular,
@@ -42,6 +41,7 @@ import {
 } from "@fluentui/react-icons";
 import { isMyGo } from "mygo-runtime";
 import { type ReactElement, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import logo from "./assets/logo.png";
 import {
   type Account,
   type Activity,
@@ -582,7 +582,7 @@ export function App() {
         </a>
         <nav className="account-rail" aria-label="Contas Google">
           <div className="rail-heading" title="Google Chat Client">
-            <ChatMultiple24Regular />
+            <img src={logo} alt="" width={32} height={32} />
           </div>
           <div className="account-buttons">
             {state.accounts.map((a) => (
@@ -651,7 +651,7 @@ export function App() {
           ) : (
             <div className="welcome">
               <div className="welcome-heading">
-                <ChatMultiple24Regular />
+                <img src={logo} alt="" width={28} height={28} />
                 <span>Google Chat Client</span>
               </div>
               <div className="welcome-content">

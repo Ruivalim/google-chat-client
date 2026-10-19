@@ -2,12 +2,20 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"log"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/egoist/mygo"
 	"github.com/ruivalim/google-chat-client/internal/chat"
 )
+
+//go:embed assets/tray.png
+var trayIcon []byte
+
+// quitting deixa a janela fechar de verdade quando o app está saindo.
+var quitting atomic.Bool
 
 func main() {
 	// Sem SetName: o nome vem do pacote, e o `mygo dev` chama o app de
@@ -39,12 +47,50 @@ func main() {
 		})
 		desktop.watcher = chat.NewWatcher(desktop.service,
 			func(a chat.Activity) { desktop.notify(win, a) },
-			func(u []chat.Unread) { _ = UnreadChanged.Emit(win, u) },
+			func(u []chat.Unread) { desktop.unreadChanged(win, u) },
 			win.IsFocused,
 		)
 		go desktop.watcher.Run(context.Background())
+
+		// Com a bandeja, fechar a janela só a esconde: o app segue avisando de
+		// mensagens novas. Sem ela (Linux sem AppIndicator), fechar encerra,
+		// senão não haveria como voltar à janela.
+		show := func() {
+			win.Show()
+			win.Focus()
+		}
+		tray, err := mygo.NewTray(mygo.TrayOptions{
+			Icon:    trayIcon,
+			ToolTip: "Google Chat Client",
+			Menu: mygo.NewMenu([]*mygo.MenuItem{
+				{Label: "Abrir Google Chat Client", Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
+				mygo.Separator(),
+				{Label: "Sair", Role: mygo.RoleQuit},
+			}),
+		})
+		if err != nil {
+			log.Println("bandeja:", err)
+			return
+		}
+		desktop.tray = tray
+		mygo.App.OnWindowAllClosed(func() {})
+		win.OnClose(func(e *mygo.CloseEvent) {
+			if quitting.Load() {
+				return
+			}
+			e.PreventDefault()
+			win.Hide()
+		})
+		mygo.App.OnActivate(func(visible bool) {
+			if !visible {
+				show()
+			}
+		})
 	})
-	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { desktop.CancelLogin() })
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
+		quitting.Store(true)
+		desktop.CancelLogin()
+	})
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
 	}

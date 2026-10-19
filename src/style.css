@@ -154,8 +154,9 @@ a {
   font-weight: 600;
   font-size: 1rem;
 }
-.welcome-heading svg {
-  color: var(--accent);
+.welcome-heading img,
+.rail-heading img {
+  display: block;
 }
 .welcome-content {
   margin: auto 0;
